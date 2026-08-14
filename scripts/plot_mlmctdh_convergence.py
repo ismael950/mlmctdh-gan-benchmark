@@ -20,6 +20,7 @@ def run_number(path: Path) -> int:
 
 
 def collect_runs(project_root: Path, benchmark: str) -> pd.DataFrame:
+    
     heidelberg_root = (
         project_root
         / "results"
@@ -47,8 +48,12 @@ def collect_runs(project_root: Path, benchmark: str) -> pd.DataFrame:
                 "run": run_dir.name,
                 "run_number": int(match.group(1)),
                 "n_ml_coefficients": summary["n_ml_coefficients"],
-                "P_mol_max_abs_error": summary["P_mol_max_abs_error"],
-                "P_mol_final_abs_error": summary["P_mol_final_abs_error"],
+                "max_molecular_orbital_population_error": (
+                    summary["max_molecular_orbital_population_error"]
+                ),
+                "final_max_molecular_orbital_population_error": (
+                    summary["final_max_molecular_orbital_population_error"]
+                ),
                 "largest_expandable_lowest_natural_population":
                     summary.get(
                         "largest_expandable_lowest_natural_population"
@@ -105,13 +110,15 @@ def main() -> None:
 
     ax.plot(
         data["n_ml_coefficients"],
-        data["P_mol_max_abs_error"],
+        data["max_molecular_orbital_population_error"],
         marker="o",
     )
 
     ax.set_yscale("log")
     ax.set_xlabel("Number of time-dependent ML coefficients")
-    ax.set_ylabel("Maximum molecular-population error")
+    ax.set_ylabel(
+    "Maximum molecular-orbital population error"
+    )
     ax.set_title(f"ML-MCTDH convergence — {args.benchmark}")
     ax.grid(True, which="both", alpha=0.25)
 
@@ -120,7 +127,7 @@ def main() -> None:
             row["run"],
             (
                 row["n_ml_coefficients"],
-                row["P_mol_max_abs_error"],
+                row["max_molecular_orbital_population_error"],
             ),
             textcoords="offset points",
             xytext=(5, 5),
@@ -138,7 +145,7 @@ def main() -> None:
             [
                 "run",
                 "n_ml_coefficients",
-                "P_mol_max_abs_error",
+                "max_molecular_orbital_population_error",
             ]
         ].to_string(index=False)
     )

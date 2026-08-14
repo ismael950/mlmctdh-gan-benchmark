@@ -48,7 +48,25 @@ def main() -> None:
         summary["largest_expandable_lowest_natural_population"],
     )
     print("Saved analysis:", analysis_directory)
-
+    print(
+        "Maximum molecular-orbital population error:",
+        summary["max_molecular_orbital_population_error"],
+    )
+    print(
+        "Orbital of maximum error:",
+        summary["molecular_orbital_of_max_error"],
+    )
+    print(
+        "Time of maximum molecular-orbital error:",
+        summary["time_of_max_molecular_orbital_error"],
+        "a.u.",
+    )
+    print(
+        "Final maximum molecular-orbital population error:",
+        summary[
+            "final_max_molecular_orbital_population_error"
+        ],
+    )
 
 if __name__ == "__main__":
     main()

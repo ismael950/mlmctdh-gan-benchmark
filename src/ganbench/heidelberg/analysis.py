@@ -298,6 +298,47 @@ def analyze_heidelberg_run(
             )
 
     error_lookup = {str(row["observable"]): row for row in errors}
+
+    molecular_orbital_errors = [
+        error_lookup[f"d{index}"]
+        for index in range(
+            1,
+            config.n_molecular_orbitals + 1,
+        )
+    ]
+
+    worst_molecular_orbital_error = max(
+        molecular_orbital_errors,
+        key=lambda row: float(
+            row["max_abs_error"]
+        ),
+    )
+
+    max_molecular_orbital_population_error = float(
+        worst_molecular_orbital_error[
+            "max_abs_error"
+        ]
+    )
+
+    molecular_orbital_of_max_error = int(
+        str(
+            worst_molecular_orbital_error[
+                "observable"
+            ]
+        )[1:]
+    )
+
+    time_of_max_molecular_orbital_error = float(
+        worst_molecular_orbital_error[
+            "time_of_max_abs_error"
+        ]
+    )
+
+    final_max_molecular_orbital_population_error = max(
+        float(row["final_abs_error"])
+        for row in molecular_orbital_errors
+    )
+
     expandable_natpops = [
         row for row in natural_population_rows if bool(row["expandable"])
     ]
@@ -322,6 +363,18 @@ def analyze_heidelberg_run(
             max(row["max_lowest_population"] for row in expandable_natpops)
             if expandable_natpops
             else None
+        ),
+        "max_molecular_orbital_population_error": (
+            max_molecular_orbital_population_error
+        ),
+        "molecular_orbital_of_max_error": (
+            molecular_orbital_of_max_error
+        ),
+        "time_of_max_molecular_orbital_error": (
+            time_of_max_molecular_orbital_error
+        ),
+        "final_max_molecular_orbital_population_error": (
+            final_max_molecular_orbital_population_error
         ),
     }
 
