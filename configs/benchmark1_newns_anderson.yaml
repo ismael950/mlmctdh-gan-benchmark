@@ -1,0 +1,96 @@
+model:
+  n_molecular_orbitals: 1
+  n_metal_orbitals: 6
+  n_electrons: 4
+  n_vibrational_modes: 1
+
+electronic:
+  # Constant part of the occupied molecular diabatic surface:
+  # Er + DeltaG = 0.008 - 0.003 = 0.005 a.u.
+  molecular_energies: [0.005]
+
+  # Six equally spaced metallic levels spanning a bandwidth of 0.01 a.u.
+  metal_energies:
+    [-0.0041666667,
+     -0.0025000000,
+     -0.0008333333,
+      0.0008333333,
+      0.0025000000,
+      0.0041666667]
+
+  # Constant molecule-metal coupling obtained from
+  # Gamma = 2*pi*V^2*rho
+  molecule_metal_couplings:
+    - [0.0001628675,
+       0.0001628675,
+       0.0001628675,
+       0.0001628675,
+       0.0001628675,
+       0.0001628675]
+
+vibrational:
+  frequencies: [0.0002]
+  basis_sizes: [256]
+  mode_types: [nonreactive]
+
+  # Turn off the old special electron-vibration implementation.
+  electron_vibration_couplings:
+    - [0.0]
+
+initial_state:
+  # Orbital ordering:
+  # 0 = molecular orbital d
+  # 1-6 = metal orbitals c1...c6
+  #
+  # Molecular orbital initially empty.
+  # The three negative-energy metal levels are occupied.
+  occupied_orbitals: [0, 1, 2, 3]
+
+  # Vibrational ground state of the empty molecular surface.
+  vibrational_levels: [0]
+
+output:
+  save_states: true
+
+propagation:
+  # Reconnaissance propagation.
+  # We will choose the final benchmark window after inspecting this run.
+  t_final: 50000.0
+  n_times: 501
+
+gan_terms:
+
+  # --------------------------------------------------
+  # U0(Q)
+  #
+  # Empty-molecule harmonic surface:
+  #
+  # U0(Q) = (omega/2) Q^2
+  #        = 0.0001 Q^2
+  # --------------------------------------------------
+
+  u0:
+    - coefficient: 0.0001
+      factors:
+        - mode: 0
+          kind: quadratic
+
+  # --------------------------------------------------
+  # U00(Q) d^dagger d
+  #
+  # The constant part Er + DeltaG = 0.005
+  # is already included in molecular_energies.
+  #
+  # Coordinate-dependent part:
+  #
+  # -sqrt(2 Er omega) Q
+  # = -0.00178885438 Q
+  # --------------------------------------------------
+
+  uij:
+    - i: 0
+      j: 0
+      coefficient: -0.00178885438
+      factors:
+        - mode: 0
+          kind: linear

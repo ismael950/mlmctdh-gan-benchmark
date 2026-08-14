@@ -1,0 +1,30 @@
+case_id: run_001
+backend: heidelberg
+method: ml-mctdh
+
+benchmark: benchmark1_newns_anderson
+
+tree:
+  type: manual_pilot
+  top_spfs: [8, 8]
+
+integrator:
+  scheme: VMF
+  method: RK8
+  parameters:
+    - 1.0e-8
+    - 1.0e-5
+
+propagation:
+  time_units: atomic
+  t_final: 50000.0
+  output_interval: 100.0
+
+wavefunction:
+  save: true
+  precision: double
+
+notes:
+  - First ML-MCTDH resource point.
+  - Fermionic modes represented with two-point spin DVRs.
+  - Jordan-Wigner parity strings included explicitly.

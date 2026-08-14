@@ -1,0 +1,154 @@
+#######################################################################
+### Benchmark 1: finite Newns-Anderson model
+### ML-MCTDH / SQR pilot
+#######################################################################
+
+RUN-SECTION
+
+name = ../../../../results/benchmark1_newns_anderson/heidelberg/run_007/raw
+
+propagate
+
+# Keep the same atomic-unit time convention as the exact solver.
+time-not-fs
+energy-not-eV
+
+tout  = 100.0
+tpsi  = 100.0
+tfinal = 50000.0
+
+steps
+psi = double
+
+# Main benchmark observables.
+expect = real-only, nd, nc1, nc2, nc3, nc4, nc5, nc6, Qmean, nvib
+
+end-run-section
+
+
+#######################################################################
+### Operator
+#######################################################################
+
+OPERATOR-SECTION
+
+opname = benchmark
+oppath = .
+
+end-operator-section
+
+
+#######################################################################
+### Primitive basis
+#######################################################################
+
+PBASIS-SECTION
+
+# Fermionic occupation modes.
+#
+# Each orbital is represented by two grid points:
+#     point 1 -> empty
+#     point 2 -> occupied
+#
+# The "spin" option provides Pauli-matrix operators.
+
+d      sin      2     -0.5     0.5     spin
+c1     sin      2     -0.5     0.5     spin
+c2     sin      2     -0.5     0.5     spin
+c3     sin      2     -0.5     0.5     spin
+c4     sin      2     -0.5     0.5     spin
+c5     sin      2     -0.5     0.5     spin
+c6     sin      2     -0.5     0.5     spin
+
+# Dimensionless nuclear coordinate Q.
+#
+# This corresponds to the same truncated HO representation
+# used in the exact benchmark.
+
+Q      HO       256    0.0      1.0     1.0
+
+end-PBASIS-SECTION
+
+
+#######################################################################
+### ML-MCTDH tree -- run_001
+#######################################################################
+
+ML-BASIS-SECTION
+
+# Top layer:
+# electronic branch + nuclear branch
+0> 28 28
+
+    # ---------------------------------------------------------------
+    # Electronic branch
+    # ---------------------------------------------------------------
+
+    1> 12 8
+
+        # d, c1, c2, c3
+        2> 4 4
+            3> [d c1]
+            3> [c2 c3]
+
+        # c4, c5, c6
+        2> 2 2 2
+            3> [c4]
+            3> [c5]
+            3> [c6]
+
+    # ---------------------------------------------------------------
+    # Nuclear branch
+    # ---------------------------------------------------------------
+
+    1> [Q]
+
+end-ML-BASIS-SECTION
+
+
+#######################################################################
+### Integrator
+#######################################################################
+
+INTEGRATOR-SECTION
+
+VMF
+RK8 = 1.0d-8, 1.0d-5
+
+end-INTEGRATOR-SECTION
+
+
+#######################################################################
+### Initial state
+#######################################################################
+
+INIT_WF-SECTION
+
+build
+
+# Initial electronic occupation:
+#
+# [d,c1,c2,c3,c4,c5,c6]
+# [1, 1, 1, 1, 0, 0, 0]
+#
+# euclid 1 -> empty
+# euclid 2 -> occupied
+
+d      euclid    2
+c1     euclid    2
+c2     euclid    2
+c3     euclid    2
+
+c4     euclid    1
+c5     euclid    1
+c6     euclid    1
+
+# Initial vibrational ground state |nu=0>.
+Q      HO        0.0     0.0     1.0
+
+end-build
+
+end-INIT_WF-SECTION
+
+
+END-INPUT
