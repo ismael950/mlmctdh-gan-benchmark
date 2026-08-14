@@ -391,3 +391,38 @@ def update_plateau_status(
         confirmations_completed=confirmations_completed,
         plateau_confirmed=plateau_confirmed,
     )
+
+def evaluate_plateau_history(
+    expectation_paths: list[str | Path],
+    n_molecular_orbitals: int,
+    config: PlateauConfig = PlateauConfig(),
+) -> tuple[list[MolecularPopulationChange], PlateauStatus | None]:
+    """
+    Evaluate convergence over an ordered sequence of ML-MCTDH runs.
+    """
+
+    if len(expectation_paths) < 2:
+        return [], None
+
+    changes: list[MolecularPopulationChange] = []
+    status: PlateauStatus | None = None
+
+    for previous_path, current_path in zip(
+        expectation_paths[:-1],
+        expectation_paths[1:],
+    ):
+        change = compare_molecular_populations(
+            previous_path,
+            current_path,
+            n_molecular_orbitals,
+        )
+
+        changes.append(change)
+
+        status = update_plateau_status(
+            status,
+            change.max_abs_change,
+            config,
+        )
+
+    return changes, status
