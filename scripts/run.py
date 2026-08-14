@@ -436,11 +436,14 @@ def run_heidelberg(
     config_file: str,
 ) -> None:
     """
-    Execute a prepared Heidelberg run when present.
+    Run the complete adaptive Heidelberg convergence loop.
 
-    Otherwise analyze the completed convergence history,
-    make the adaptive refinement decision, and prepare
-    the next ML-MCTDH input.
+    The loop:
+        1. Executes any prepared unfinished run.
+        2. Analyzes it.
+        3. Evaluates convergence.
+        4. Refines the ML ranks if necessary.
+        5. Repeats until convergence or saturation.
     """
 
     project_root = (
@@ -473,20 +476,150 @@ def run_heidelberg(
         / "heidelberg"
     )
 
-    # --------------------------------------------------------
-    # Check for a prepared but unfinished run
-    # --------------------------------------------------------
+    # Safety limit against accidental infinite refinement.
+    max_adaptive_iterations = 25
+    adaptive_iteration = 0
 
-    pending_runs = []
+    while True:
 
-    if input_root.exists():
-        for path in input_root.glob(
+        adaptive_iteration += 1
+
+        if (
+            adaptive_iteration
+            > max_adaptive_iterations
+        ):
+            raise RuntimeError(
+                "Maximum number of adaptive iterations "
+                "was reached without convergence."
+            )
+
+        print()
+        print(
+            "=" * 60
+        )
+        print(
+            f"Adaptive iteration "
+            f"{adaptive_iteration}"
+        )
+        print(
+            "=" * 60
+        )
+
+        # ----------------------------------------------------
+        # Detect prepared but unfinished runs
+        # ----------------------------------------------------
+
+        pending_runs = []
+
+        if input_root.exists():
+
+            for path in input_root.glob(
+                "run_*"
+            ):
+
+                try:
+                    run_number = int(
+                        path.name.split("_")[1]
+                    )
+
+                except (
+                    IndexError,
+                    ValueError,
+                ):
+                    continue
+
+                expectation = (
+                    results_root
+                    / path.name
+                    / "raw"
+                    / "expectation"
+                )
+
+                if (
+                    (
+                        path
+                        / "benchmark.inp"
+                    ).exists()
+                    and not expectation.exists()
+                ):
+                    pending_runs.append(
+                        (
+                            run_number,
+                            path.name,
+                        )
+                    )
+
+        pending_runs.sort(
+            key=lambda item: item[0]
+        )
+
+        if len(
+            pending_runs
+        ) > 1:
+
+            pending_ids = [
+                run_id
+                for _, run_id
+                in pending_runs
+            ]
+
+            raise RuntimeError(
+                "More than one prepared Heidelberg "
+                "run is waiting to be executed: "
+                f"{pending_ids}"
+            )
+
+        # ----------------------------------------------------
+        # Execute pending run
+        # ----------------------------------------------------
+
+        if pending_runs:
+
+            (
+                _,
+                pending_run_id,
+            ) = pending_runs[0]
+
+            print(
+                f"Prepared run detected: "
+                f"{pending_run_id}"
+            )
+
+            execute_heidelberg_run(
+                project_root=project_root,
+                benchmark=benchmark,
+                run_id=pending_run_id,
+            )
+
+            # Do NOT return.
+            #
+            # The loop now continues immediately so the new
+            # result is included in the convergence decision.
+
+            continue
+
+        # ----------------------------------------------------
+        # Find all completed runs
+        # ----------------------------------------------------
+
+        if not results_root.exists():
+
+            raise RuntimeError(
+                f"No Heidelberg results found "
+                f"for {benchmark}."
+            )
+
+        completed_runs = []
+
+        for path in results_root.glob(
             "run_*"
         ):
+
             try:
                 run_number = int(
                     path.name.split("_")[1]
                 )
+
             except (
                 IndexError,
                 ValueError,
@@ -494,272 +627,262 @@ def run_heidelberg(
                 continue
 
             expectation = (
-                results_root
-                / path.name
+                path
                 / "raw"
                 / "expectation"
             )
 
-            if (
-                (
-                    path
-                    / "benchmark.inp"
-                ).exists()
-                and not expectation.exists()
-            ):
-                pending_runs.append(
+            if expectation.exists():
+
+                completed_runs.append(
                     (
                         run_number,
-                        path.name,
+                        path,
                     )
                 )
 
-    pending_runs.sort(
-        key=lambda item: item[0]
-    )
+        completed_runs.sort(
+            key=lambda item: item[0]
+        )
 
-    if pending_runs:
-        if len(
-            pending_runs
-        ) > 1:
-            pending_ids = [
-                run_id
-                for _, run_id
-                in pending_runs
-            ]
+        if not completed_runs:
 
-            raise SystemExit(
-                "More than one prepared Heidelberg "
-                "run is waiting to be executed: "
-                f"{pending_ids}"
+            raise RuntimeError(
+                "No completed Heidelberg runs "
+                "were found."
             )
 
         (
-            _,
-            pending_run_id,
-        ) = pending_runs[0]
+            latest_number,
+            latest_results,
+        ) = completed_runs[-1]
 
-        print(
-            f"Prepared run detected: "
-            f"{pending_run_id}"
+        latest_run_id = (
+            f"run_{latest_number:03d}"
         )
 
-        execute_heidelberg_run(
-            project_root=project_root,
-            benchmark=benchmark,
-            run_id=pending_run_id,
+        # ----------------------------------------------------
+        # Ensure latest run has been analyzed
+        # ----------------------------------------------------
+
+        natural_populations_path = (
+            latest_results
+            / "analysis"
+            / "natural_populations.csv"
         )
 
-        return
+        if not natural_populations_path.exists():
 
-    # --------------------------------------------------------
-    # Find completed runs
-    # --------------------------------------------------------
-
-    if not results_root.exists():
-        raise SystemExit(
-            f"No Heidelberg results found "
-            f"for {benchmark}."
-        )
-
-    completed_runs = []
-
-    for path in results_root.glob(
-        "run_*"
-    ):
-        try:
-            run_number = int(
-                path.name.split("_")[1]
-            )
-        except (
-            IndexError,
-            ValueError,
-        ):
-            continue
-
-        expectation = (
-            path
-            / "raw"
-            / "expectation"
-        )
-
-        if expectation.exists():
-            completed_runs.append(
-                (
-                    run_number,
-                    path,
-                )
+            print(
+                f"Analysis missing for "
+                f"{latest_run_id}."
             )
 
-    completed_runs.sort(
-        key=lambda item: item[0]
-    )
+            print(
+                "Analyzing latest run..."
+            )
 
-    if not completed_runs:
-        raise SystemExit(
-            "No completed Heidelberg runs "
-            "were found."
-        )
+            analyze_heidelberg_run(
+                project_root=project_root,
+                benchmark=benchmark,
+                run_id=latest_run_id,
+            )
 
-    (
-        latest_number,
-        latest_results,
-    ) = completed_runs[-1]
+        # ----------------------------------------------------
+        # Evaluate convergence history
+        # ----------------------------------------------------
 
-    latest_run_id = (
-        f"run_{latest_number:03d}"
-    )
+        expectation_paths = [
+            (
+                path
+                / "raw"
+                / "expectation"
+            )
+            for _, path
+            in completed_runs
+        ]
 
-    # --------------------------------------------------------
-    # Evaluate plateau history
-    # --------------------------------------------------------
-
-    expectation_paths = [
         (
-            path
-            / "raw"
-            / "expectation"
-        )
-        for _, path
-        in completed_runs
-    ]
-
-    (
-        _,
-        plateau_status,
-    ) = evaluate_plateau_history(
-        expectation_paths,
-        config.n_molecular_orbitals,
-    )
-
-    # --------------------------------------------------------
-    # Read natural populations
-    # --------------------------------------------------------
-
-    natural_populations_path = (
-        latest_results
-        / "analysis"
-        / "natural_populations.csv"
-    )
-
-    if not natural_populations_path.exists():
-        raise SystemExit(
-            f"Missing analysis for "
-            f"{latest_run_id}: "
-            f"{natural_populations_path}"
-        )
-
-    branch_states = (
-        read_branch_states(
-            natural_populations_path
-        )
-    )
-
-    # --------------------------------------------------------
-    # Adaptive decision
-    # --------------------------------------------------------
-
-    decision = (
-        make_adaptive_decision(
-            branch_states,
+            changes,
             plateau_status,
+        ) = evaluate_plateau_history(
+            expectation_paths,
+            config.n_molecular_orbitals,
         )
-    )
 
-    print(
-        f"Latest completed run: "
-        f"{latest_run_id}"
-    )
+        if changes:
 
-    print(
-        f"Adaptive action: "
-        f"{decision.action}"
-    )
+            latest_change = (
+                changes[-1]
+            )
 
-    print(
-        f"Plateau status: "
-        f"{plateau_status}"
-    )
+            print(
+                "Latest molecular-population "
+                "change:",
+                latest_change.max_abs_change,
+            )
 
-    if (
-        decision.action
-        != "refine"
-    ):
+            print(
+                "Orbital producing maximum "
+                "change:",
+                latest_change.orbital_index,
+            )
+
+            print(
+                "Time of maximum change:",
+                latest_change.time_of_max_change,
+            )
+
+        # ----------------------------------------------------
+        # Read natural populations
+        # ----------------------------------------------------
+
+        branch_states = (
+            read_branch_states(
+                natural_populations_path
+            )
+        )
+
+        # ----------------------------------------------------
+        # Adaptive decision
+        # ----------------------------------------------------
+
+        decision = (
+            make_adaptive_decision(
+                branch_states,
+                plateau_status,
+            )
+        )
+
         print(
-            "No additional Heidelberg "
-            "input is required."
+            f"Latest completed run: "
+            f"{latest_run_id}"
         )
 
-        return
-
-    # --------------------------------------------------------
-    # Prepare next run
-    # --------------------------------------------------------
-
-    next_number = (
-        latest_number + 1
-    )
-
-    next_run_id = (
-        f"run_{next_number:03d}"
-    )
-
-    source_directory = (
-        input_root
-        / latest_run_id
-    )
-
-    destination_directory = (
-        input_root
-        / next_run_id
-    )
-
-    if destination_directory.exists():
-        raise SystemExit(
-            f"{destination_directory} "
-            "already exists. "
-            "Refusing to overwrite it."
+        print(
+            f"Adaptive action: "
+            f"{decision.action}"
         )
 
-    destination_directory.mkdir(
-        parents=True,
-        exist_ok=False,
-    )
+        print(
+            f"Plateau status: "
+            f"{plateau_status}"
+        )
 
-    write_refined_input(
-        source_directory
-        / "benchmark.inp",
-        destination_directory
-        / "benchmark.inp",
-        next_number,
-        decision.rank_updates,
-    )
+        # ----------------------------------------------------
+        # Stop conditions
+        # ----------------------------------------------------
 
-    shutil.copy2(
-        source_directory
-        / "benchmark.op",
-        destination_directory
-        / "benchmark.op",
-    )
+        if (
+            decision.action
+            == "plateau"
+        ):
 
-    print(
-        f"Prepared {next_run_id}"
-    )
+            print()
+            print(
+                "Convergence confirmed."
+            )
 
-    print(
-        "Rank updates:",
-        decision.rank_updates,
-    )
+            print(
+                f"Final run: "
+                f"{latest_run_id}"
+            )
 
-    print(
-        "Input directory:",
-        destination_directory,
-    )
+            return
 
+        if (
+            decision.action
+            == "saturated"
+        ):
 
-# ============================================================
-# Command line
-# ============================================================
+            print()
+            print(
+                "No further rank refinement "
+                "is possible."
+            )
+
+            print(
+                f"Final available run: "
+                f"{latest_run_id}"
+            )
+
+            return
+
+        if (
+            decision.action
+            != "refine"
+        ):
+
+            raise RuntimeError(
+                "Unknown adaptive action: "
+                f"{decision.action}"
+            )
+
+        # ----------------------------------------------------
+        # Prepare next run
+        # ----------------------------------------------------
+
+        next_number = (
+            latest_number + 1
+        )
+
+        next_run_id = (
+            f"run_{next_number:03d}"
+        )
+
+        source_directory = (
+            input_root
+            / latest_run_id
+        )
+
+        destination_directory = (
+            input_root
+            / next_run_id
+        )
+
+        if destination_directory.exists():
+
+            raise RuntimeError(
+                f"{destination_directory} "
+                "already exists but has no "
+                "completed result."
+            )
+
+        destination_directory.mkdir(
+            parents=True,
+            exist_ok=False,
+        )
+
+        write_refined_input(
+            source_directory
+            / "benchmark.inp",
+            destination_directory
+            / "benchmark.inp",
+            next_number,
+            decision.rank_updates,
+        )
+
+        shutil.copy2(
+            source_directory
+            / "benchmark.op",
+            destination_directory
+            / "benchmark.op",
+        )
+
+        print()
+        print(
+            f"Prepared {next_run_id}"
+        )
+
+        print(
+            "Rank updates:",
+            decision.rank_updates,
+        )
+
+        # Do NOT return.
+        #
+        # On the next while iteration this run will be
+        # detected as pending and executed automatically.
 
 
 def main() -> None:
