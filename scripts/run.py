@@ -1,22 +1,39 @@
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
+import subprocess
 from pathlib import Path
+
 import numpy as np
 
 from ganbench.model import load_config
 from ganbench.results import save_exact_results
-from ganbench.exact.hamiltonian import build_exact_hamiltonian
-from ganbench.exact.propagate import propagate_exact
-from ganbench.exact.observables import compute_observables
 
+from ganbench.exact.hamiltonian import build_exact_hamiltonian
+from ganbench.exact.observables import compute_observables
+from ganbench.exact.propagate import propagate_exact
+
+from ganbench.heidelberg.analysis import analyze_heidelberg_run
 from ganbench.heidelberg.convergence import (
     evaluate_plateau_history,
     make_adaptive_decision,
     read_branch_states,
 )
 from ganbench.heidelberg.input import write_refined_input
+
+
+MCTDH_BINARY = (
+    "/home/ismael/software/MCTDH/"
+    "mctdh86.10/bin/binary/x86_64/mctdh86"
+)
+
+
+# ============================================================
+# Exact backend
+# ============================================================
+
 
 def run_exact(config_file: str) -> None:
     """Run one configuration with the exact solver."""
@@ -269,22 +286,185 @@ def run_exact(config_file: str) -> None:
     )
 
     print(
-    "\nResults saved to:",
-    results_directory,
-)
+        "\nResults saved to:",
+        results_directory,
+    )
 
 
-def run_heidelberg(config_file: str) -> None:
+# ============================================================
+# WSL / Heidelberg helpers
+# ============================================================
+
+
+def _to_wsl_path(path: Path) -> str:
+    """Convert an absolute Windows path to its WSL path."""
+
+    windows_path = str(path.resolve())
+
+    command = (
+        "wslpath -a "
+        + shlex.quote(windows_path)
+    )
+
+    result = subprocess.run(
+        [
+            "wsl.exe",
+            "bash",
+            "-lc",
+            command,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    return result.stdout.strip()
+
+
+def execute_heidelberg_run(
+    project_root: Path,
+    benchmark: str,
+    run_id: str,
+) -> Path:
     """
-    Analyse the completed Heidelberg convergence history and
-    prepare the next adaptive ML-MCTDH input.
+    Execute one prepared Heidelberg run through WSL,
+    then analyze its results.
     """
 
-    project_root = Path(__file__).resolve().parents[1]
-    config_path = Path(config_file)
-    config = load_config(config_path)
+    input_directory = (
+        project_root
+        / "backend_inputs"
+        / benchmark
+        / "heidelberg"
+        / run_id
+    )
 
-    benchmark = config_path.stem
+    raw_directory = (
+        project_root
+        / "results"
+        / benchmark
+        / "heidelberg"
+        / run_id
+        / "raw"
+    )
+
+    input_file = (
+        input_directory
+        / "benchmark.inp"
+    )
+
+    if not input_file.exists():
+        raise FileNotFoundError(
+            f"Missing Heidelberg input: {input_file}"
+        )
+
+    if (
+        raw_directory
+        / "expectation"
+    ).exists():
+        raise RuntimeError(
+            f"{run_id} already appears to have completed."
+        )
+
+    input_wsl = _to_wsl_path(
+        input_directory
+    )
+
+    raw_wsl = _to_wsl_path(
+        raw_directory
+    )
+
+    command = (
+        f"mkdir -p {shlex.quote(raw_wsl)}"
+        f" && cd {shlex.quote(input_wsl)}"
+        f" && {shlex.quote(MCTDH_BINARY)} benchmark.inp"
+    )
+
+    print(
+        f"Executing Heidelberg {run_id}..."
+    )
+
+    subprocess.run(
+        [
+            "wsl.exe",
+            "bash",
+            "-lc",
+            command,
+        ],
+        check=True,
+    )
+
+    if not (
+        raw_directory
+        / "expectation"
+    ).exists():
+        raise RuntimeError(
+            "Heidelberg finished without producing "
+            f"the expected output for {run_id}."
+        )
+
+    print(
+        f"Propagation completed: {run_id}"
+    )
+
+    print(
+        "Analyzing results..."
+    )
+
+    analysis_directory = (
+        analyze_heidelberg_run(
+            project_root=project_root,
+            benchmark=benchmark,
+            run_id=run_id,
+        )
+    )
+
+    print(
+        "Analysis completed:",
+        analysis_directory,
+    )
+
+    return analysis_directory
+
+
+# ============================================================
+# Heidelberg adaptive backend
+# ============================================================
+
+
+def run_heidelberg(
+    config_file: str,
+) -> None:
+    """
+    Execute a prepared Heidelberg run when present.
+
+    Otherwise analyze the completed convergence history,
+    make the adaptive refinement decision, and prepare
+    the next ML-MCTDH input.
+    """
+
+    project_root = (
+        Path(__file__).resolve().parents[1]
+    )
+
+    config_path = Path(
+        config_file
+    )
+
+    config = load_config(
+        config_path
+    )
+
+    benchmark = (
+        config_path.stem
+    )
+
+    input_root = (
+        project_root
+        / "backend_inputs"
+        / benchmark
+        / "heidelberg"
+    )
 
     results_root = (
         project_root
@@ -293,24 +473,122 @@ def run_heidelberg(config_file: str) -> None:
         / "heidelberg"
     )
 
+    # --------------------------------------------------------
+    # Check for a prepared but unfinished run
+    # --------------------------------------------------------
+
+    pending_runs = []
+
+    if input_root.exists():
+        for path in input_root.glob(
+            "run_*"
+        ):
+            try:
+                run_number = int(
+                    path.name.split("_")[1]
+                )
+            except (
+                IndexError,
+                ValueError,
+            ):
+                continue
+
+            expectation = (
+                results_root
+                / path.name
+                / "raw"
+                / "expectation"
+            )
+
+            if (
+                (
+                    path
+                    / "benchmark.inp"
+                ).exists()
+                and not expectation.exists()
+            ):
+                pending_runs.append(
+                    (
+                        run_number,
+                        path.name,
+                    )
+                )
+
+    pending_runs.sort(
+        key=lambda item: item[0]
+    )
+
+    if pending_runs:
+        if len(
+            pending_runs
+        ) > 1:
+            pending_ids = [
+                run_id
+                for _, run_id
+                in pending_runs
+            ]
+
+            raise SystemExit(
+                "More than one prepared Heidelberg "
+                "run is waiting to be executed: "
+                f"{pending_ids}"
+            )
+
+        (
+            _,
+            pending_run_id,
+        ) = pending_runs[0]
+
+        print(
+            f"Prepared run detected: "
+            f"{pending_run_id}"
+        )
+
+        execute_heidelberg_run(
+            project_root=project_root,
+            benchmark=benchmark,
+            run_id=pending_run_id,
+        )
+
+        return
+
+    # --------------------------------------------------------
+    # Find completed runs
+    # --------------------------------------------------------
+
     if not results_root.exists():
         raise SystemExit(
-            f"No Heidelberg results found for {benchmark}."
+            f"No Heidelberg results found "
+            f"for {benchmark}."
         )
 
     completed_runs = []
 
-    for path in results_root.glob("run_*"):
+    for path in results_root.glob(
+        "run_*"
+    ):
         try:
-            run_number = int(path.name.split("_")[1])
-        except (IndexError, ValueError):
+            run_number = int(
+                path.name.split("_")[1]
+            )
+        except (
+            IndexError,
+            ValueError,
+        ):
             continue
 
-        expectation = path / "raw" / "expectation"
+        expectation = (
+            path
+            / "raw"
+            / "expectation"
+        )
 
         if expectation.exists():
             completed_runs.append(
-                (run_number, path)
+                (
+                    run_number,
+                    path,
+                )
             )
 
     completed_runs.sort(
@@ -319,21 +597,44 @@ def run_heidelberg(config_file: str) -> None:
 
     if not completed_runs:
         raise SystemExit(
-            "No completed Heidelberg runs were found."
+            "No completed Heidelberg runs "
+            "were found."
         )
 
-    latest_number, latest_results = completed_runs[-1]
-    latest_run_id = f"run_{latest_number:03d}"
+    (
+        latest_number,
+        latest_results,
+    ) = completed_runs[-1]
+
+    latest_run_id = (
+        f"run_{latest_number:03d}"
+    )
+
+    # --------------------------------------------------------
+    # Evaluate plateau history
+    # --------------------------------------------------------
 
     expectation_paths = [
-        path / "raw" / "expectation"
-        for _, path in completed_runs
+        (
+            path
+            / "raw"
+            / "expectation"
+        )
+        for _, path
+        in completed_runs
     ]
 
-    _, plateau_status = evaluate_plateau_history(
+    (
+        _,
+        plateau_status,
+    ) = evaluate_plateau_history(
         expectation_paths,
         config.n_molecular_orbitals,
     )
+
+    # --------------------------------------------------------
+    # Read natural populations
+    # --------------------------------------------------------
 
     natural_populations_path = (
         latest_results
@@ -343,57 +644,80 @@ def run_heidelberg(config_file: str) -> None:
 
     if not natural_populations_path.exists():
         raise SystemExit(
-            f"Missing analysis for {latest_run_id}: "
+            f"Missing analysis for "
+            f"{latest_run_id}: "
             f"{natural_populations_path}"
         )
 
-    branch_states = read_branch_states(
-        natural_populations_path
-    )
-
-    decision = make_adaptive_decision(
-        branch_states,
-        plateau_status,
-    )
-
-    print(
-        f"Latest completed run: {latest_run_id}"
-    )
-    print(
-        f"Adaptive action: {decision.action}"
-    )
-    print(
-        f"Plateau status: {plateau_status}"
-    )
-
-    if decision.action != "refine":
-        print(
-            "No additional Heidelberg input is required."
+    branch_states = (
+        read_branch_states(
+            natural_populations_path
         )
+    )
+
+    # --------------------------------------------------------
+    # Adaptive decision
+    # --------------------------------------------------------
+
+    decision = (
+        make_adaptive_decision(
+            branch_states,
+            plateau_status,
+        )
+    )
+
+    print(
+        f"Latest completed run: "
+        f"{latest_run_id}"
+    )
+
+    print(
+        f"Adaptive action: "
+        f"{decision.action}"
+    )
+
+    print(
+        f"Plateau status: "
+        f"{plateau_status}"
+    )
+
+    if (
+        decision.action
+        != "refine"
+    ):
+        print(
+            "No additional Heidelberg "
+            "input is required."
+        )
+
         return
 
-    next_number = latest_number + 1
-    next_run_id = f"run_{next_number:03d}"
+    # --------------------------------------------------------
+    # Prepare next run
+    # --------------------------------------------------------
+
+    next_number = (
+        latest_number + 1
+    )
+
+    next_run_id = (
+        f"run_{next_number:03d}"
+    )
 
     source_directory = (
-        project_root
-        / "backend_inputs"
-        / benchmark
-        / "heidelberg"
+        input_root
         / latest_run_id
     )
 
     destination_directory = (
-        project_root
-        / "backend_inputs"
-        / benchmark
-        / "heidelberg"
+        input_root
         / next_run_id
     )
 
     if destination_directory.exists():
         raise SystemExit(
-            f"{destination_directory} already exists. "
+            f"{destination_directory} "
+            "already exists. "
             "Refusing to overwrite it."
         )
 
@@ -403,27 +727,39 @@ def run_heidelberg(config_file: str) -> None:
     )
 
     write_refined_input(
-        source_directory / "benchmark.inp",
-        destination_directory / "benchmark.inp",
+        source_directory
+        / "benchmark.inp",
+        destination_directory
+        / "benchmark.inp",
         next_number,
         decision.rank_updates,
     )
 
     shutil.copy2(
-        source_directory / "benchmark.op",
-        destination_directory / "benchmark.op",
+        source_directory
+        / "benchmark.op",
+        destination_directory
+        / "benchmark.op",
     )
 
     print(
         f"Prepared {next_run_id}"
     )
+
     print(
-        f"Rank updates: {decision.rank_updates}"
+        "Rank updates:",
+        decision.rank_updates,
     )
+
     print(
         "Input directory:",
         destination_directory,
     )
+
+
+# ============================================================
+# Command line
+# ============================================================
 
 
 def main() -> None:
@@ -435,7 +771,10 @@ def main() -> None:
 
     parser.add_argument(
         "config",
-        help="Path to the YAML configuration file.",
+        help=(
+            "Path to the YAML "
+            "configuration file."
+        ),
     )
 
     parser.add_argument(
