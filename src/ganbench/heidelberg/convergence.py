@@ -4,6 +4,9 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+
+from ganbench.heidelberg.parser import read_expectation
 
 @dataclass(frozen=True)
 class BranchState:
@@ -211,4 +214,180 @@ def propose_rank_updates(
             old_rank=branch.rank,
             new_rank=new_rank,
         ),
+    )
+
+@dataclass(frozen=True)
+class MolecularPopulationChange:
+    """Largest molecular-orbital population change between two runs."""
+
+    max_abs_change: float
+    orbital_index: int
+    time_of_max_change: float
+    final_max_abs_change: float
+
+
+def _molecular_population_columns(
+    expectation: dict[str, np.ndarray],
+    n_molecular_orbitals: int,
+) -> list[str]:
+    """Return Heidelberg column names for all molecular orbital populations."""
+
+    if n_molecular_orbitals == 1 and "nd" in expectation:
+        return ["nd"]
+
+    names = [
+        f"nd{index}"
+        for index in range(1, n_molecular_orbitals + 1)
+    ]
+
+    missing = [name for name in names if name not in expectation]
+
+    if missing:
+        raise KeyError(
+            f"Missing molecular population columns: {missing}"
+        )
+
+    return names
+
+
+def compare_molecular_populations(
+    previous_expectation: str | Path,
+    current_expectation: str | Path,
+    n_molecular_orbitals: int,
+) -> MolecularPopulationChange:
+    """
+    Compare all molecular-orbital populations between two ML-MCTDH runs.
+
+    The convergence metric is the maximum absolute population difference
+    over every molecular orbital and every propagation time.
+    """
+
+    previous = read_expectation(previous_expectation)
+    current = read_expectation(current_expectation)
+
+    previous_times = previous["time"]
+    current_times = current["time"]
+
+    if (
+        previous_times.shape != current_times.shape
+        or not np.allclose(previous_times, current_times)
+    ):
+        raise ValueError(
+            "The two Heidelberg runs use different time grids."
+        )
+
+    previous_names = _molecular_population_columns(
+        previous,
+        n_molecular_orbitals,
+    )
+    current_names = _molecular_population_columns(
+        current,
+        n_molecular_orbitals,
+    )
+
+    previous_populations = np.column_stack(
+        [previous[name] for name in previous_names]
+    )
+    current_populations = np.column_stack(
+        [current[name] for name in current_names]
+    )
+
+    absolute_change = np.abs(
+        current_populations - previous_populations
+    )
+
+    time_index, orbital_index = np.unravel_index(
+        np.argmax(absolute_change),
+        absolute_change.shape,
+    )
+
+    final_max_abs_change = float(
+        np.max(absolute_change[-1, :])
+    )
+
+    return MolecularPopulationChange(
+        max_abs_change=float(
+            absolute_change[time_index, orbital_index]
+        ),
+        orbital_index=int(orbital_index + 1),
+        time_of_max_change=float(current_times[time_index]),
+        final_max_abs_change=final_max_abs_change,
+    )
+
+@dataclass(frozen=True)
+class PlateauConfig:
+    """Rules used to detect and confirm observable convergence."""
+
+    change_tolerance: float = 1.0e-5
+    trigger_consecutive_runs: int = 2
+    confirmation_runs: int = 3
+
+
+@dataclass(frozen=True)
+class PlateauStatus:
+    """Current state of plateau detection."""
+
+    small_change_count: int
+    plateau_triggered: bool
+    confirmations_completed: int
+    plateau_confirmed: bool
+
+def update_plateau_status(
+    previous_status: PlateauStatus | None,
+    max_abs_change: float,
+    config: PlateauConfig = PlateauConfig(),
+) -> PlateauStatus:
+    """
+    Update plateau detection after one new pair of consecutive runs.
+
+    A change above the tolerance resets the entire plateau count.
+    """
+
+    if config.change_tolerance <= 0:
+        raise ValueError("change_tolerance must be positive")
+
+    if config.trigger_consecutive_runs < 1:
+        raise ValueError("trigger_consecutive_runs must be at least 1")
+
+    if config.confirmation_runs < 1:
+        raise ValueError("confirmation_runs must be at least 1")
+
+    previous_count = (
+        previous_status.small_change_count
+        if previous_status is not None
+        else 0
+    )
+
+    if max_abs_change < config.change_tolerance:
+        small_change_count = previous_count + 1
+    else:
+        # A significant change means the apparent plateau was premature.
+        small_change_count = 0
+
+    plateau_triggered = (
+        small_change_count >= config.trigger_consecutive_runs
+    )
+
+    if plateau_triggered:
+        confirmations_completed = max(
+            0,
+            small_change_count - config.trigger_consecutive_runs,
+        )
+        confirmations_completed = min(
+            confirmations_completed,
+            config.confirmation_runs,
+        )
+    else:
+        confirmations_completed = 0
+
+    plateau_confirmed = (
+        small_change_count
+        >= config.trigger_consecutive_runs + config.confirmation_runs
+    )
+
+    return PlateauStatus(
+        small_change_count=small_change_count,
+        plateau_triggered=plateau_triggered,
+        confirmations_completed=confirmations_completed,
+        plateau_confirmed=plateau_confirmed,
     )
