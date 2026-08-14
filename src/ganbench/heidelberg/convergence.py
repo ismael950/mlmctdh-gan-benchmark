@@ -426,3 +426,55 @@ def evaluate_plateau_history(
         )
 
     return changes, status
+
+@dataclass(frozen=True)
+class AdaptiveDecision:
+    """Decision made after analysing the latest ML-MCTDH run."""
+
+    action: str
+    plateau_status: PlateauStatus | None
+    target: RefinementTarget | None
+    rank_updates: tuple[RankUpdate, ...]
+
+
+def make_adaptive_decision(
+    branch_states: list[BranchState],
+    plateau_status: PlateauStatus | None,
+    rank_increment: int = 4,
+) -> AdaptiveDecision:
+    """
+    Decide whether to stop or perform another SPF-rank refinement.
+    """
+
+    if (
+        plateau_status is not None
+        and plateau_status.plateau_confirmed
+    ):
+        return AdaptiveDecision(
+            action="plateau",
+            plateau_status=plateau_status,
+            target=None,
+            rank_updates=(),
+        )
+
+    target = select_refinement_target(branch_states)
+
+    if target is None:
+        return AdaptiveDecision(
+            action="saturated",
+            plateau_status=plateau_status,
+            target=None,
+            rank_updates=(),
+        )
+
+    updates = propose_rank_updates(
+        target,
+        increment=rank_increment,
+    )
+
+    return AdaptiveDecision(
+        action="refine",
+        plateau_status=plateau_status,
+        target=target,
+        rank_updates=updates,
+    )
