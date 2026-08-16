@@ -1,0 +1,124 @@
+#######################################################################
+### Benchmark 2: two molecular orbitals
+### Small ML-MCTDH/SQR validation benchmark
+#######################################################################
+
+RUN-SECTION
+
+name = ../../../../results/benchmark2_two_molecular/heidelberg/run_003/raw
+
+propagate
+
+time-not-fs
+energy-not-eV
+
+tout   = 50.0
+tpsi   = 50.0
+tfinal = 10000.0
+
+steps
+psi = double
+
+expect = real-only, nd1, nd2, nc1, nc2, nc3, nc4, Qmean, nvib
+
+end-run-section
+
+
+#######################################################################
+### Operator
+#######################################################################
+
+OPERATOR-SECTION
+
+opname = benchmark
+oppath = .
+
+end-operator-section
+
+
+#######################################################################
+### Primitive basis
+#######################################################################
+
+PBASIS-SECTION
+
+d1     sin      2     -0.5     0.5     spin
+d2     sin      2     -0.5     0.5     spin
+
+c1     sin      2     -0.5     0.5     spin
+c2     sin      2     -0.5     0.5     spin
+c3     sin      2     -0.5     0.5     spin
+c4     sin      2     -0.5     0.5     spin
+
+Q      HO       96    0.0      1.0     1.0
+
+end-PBASIS-SECTION
+
+
+#######################################################################
+### ML-MCTDH tree
+###
+###               ROOT
+###              /    \
+###       ELECTRONIC    Q
+###       /    |    \
+###    d1,d2  c1,c2  c3,c4
+###
+### The three two-orbital electronic groups use their complete
+### primitive spaces (dimension 4). Adaptive convergence therefore
+### primarily increases the electronic-nuclear Schmidt rank.
+#######################################################################
+
+ML-BASIS-SECTION
+
+0> 12 12
+
+    1> 4 4 4
+        2> [d1 d2]
+        2> [c1 c2]
+        2> [c3 c4]
+
+    1> [Q]
+
+end-ML-BASIS-SECTION
+
+
+#######################################################################
+### Integrator
+#######################################################################
+
+INTEGRATOR-SECTION
+
+VMF
+RK8 = 1.0d-8, 1.0d-5
+
+end-INTEGRATOR-SECTION
+
+
+#######################################################################
+### Initial state
+#######################################################################
+
+INIT_WF-SECTION
+
+build
+
+# [d1,d2,c1,c2,c3,c4]
+# [ 1, 0, 1, 1, 0, 0]
+
+d1     euclid    2
+d2     euclid    1
+
+c1     euclid    2
+c2     euclid    2
+c3     euclid    1
+c4     euclid    1
+
+Q      HO        0.0     0.0     1.0
+
+end-build
+
+end-INIT_WF-SECTION
+
+
+END-INPUT
