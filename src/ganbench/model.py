@@ -44,6 +44,64 @@ class NuclearProductSpec:
     factors: tuple[NuclearFactorSpec, ...]
 
 
+# ============================================================
+# Physical nuclear-coordinate representation
+# ============================================================
+
+
+@dataclass(frozen=True)
+class NuclearBasisSpec:
+    """
+    Primitive representation of one physical nuclear coordinate.
+
+    Example:
+        sine-DVR for a coordinate expressed in Angstrom.
+    """
+
+    kind: str
+    size: int
+    minimum: float
+    maximum: float
+    length_unit: str = "angstrom"
+
+
+@dataclass(frozen=True)
+class NuclearInitialStateSpec:
+    """
+    Initial state associated with one physical nuclear coordinate.
+
+    Examples:
+        neutral_pes_eigenstate
+        gaussian
+    """
+
+    kind: str
+    parameters: dict[str, float]
+
+
+@dataclass(frozen=True)
+class NuclearCoordinateSpec:
+    """
+    One physical nuclear degree of freedom.
+
+    Examples for NO/Au:
+
+        r : reactive N-O stretch
+        z : translational molecule-surface coordinate
+    """
+
+    name: str
+    mode_type: str
+    mass_amu: float
+    basis: NuclearBasisSpec
+    initial_state: NuclearInitialStateSpec
+
+
+# ============================================================
+# General GAN electronic terms
+# ============================================================
+
+
 @dataclass(frozen=True)
 class UijTermSpec:
     """
@@ -102,41 +160,87 @@ class WikTermSpec:
 class GANConfig:
     """Parameters defining one GAN model."""
 
+    # --------------------------------------------------------
     # Model size
+    # --------------------------------------------------------
+
     n_molecular_orbitals: int
     n_metal_orbitals: int
     n_electrons: int
+
+    # Keep this name for backward compatibility.
+    #
+    # In physical models it means the total number of
+    # nuclear coordinates, not necessarily harmonic modes.
     n_vibrational_modes: int
 
+    # --------------------------------------------------------
     # Electronic parameters
+    # --------------------------------------------------------
+
     molecular_energies: np.ndarray
     metal_energies: np.ndarray
     molecule_metal_couplings: np.ndarray
 
-    # Vibrational parameters
+    # --------------------------------------------------------
+    # Legacy vibrational parameters
+    # --------------------------------------------------------
+    #
+    # Toy models use harmonic-oscillator primitive bases.
+    #
+    # Physical nuclear-coordinate models do NOT require
+    # harmonic frequencies. For those models:
+    #
+    #     frequencies = empty array
+    #
+    # while basis_sizes and mode_types are obtained from
+    # nuclear_coordinates.
+
     frequencies: np.ndarray
-    basis_sizes: tuple[int, ...]
+
+    basis_sizes: tuple[
+        int, ...
+    ]
+
     electron_vibration_couplings: np.ndarray
 
-    # Physical classification of nuclear modes:
-    # nonreactive, reactive, translational, or unspecified.
-    mode_types: tuple[str, ...]
+    mode_types: tuple[
+        str, ...
+    ]
 
+    # --------------------------------------------------------
     # Initial state
-    occupied_orbitals: tuple[int, ...]
-    vibrational_levels: tuple[int, ...]
+    # --------------------------------------------------------
 
-    # Propagation parameters
+    occupied_orbitals: tuple[
+        int, ...
+    ]
+
+    # Used only by the legacy harmonic representation.
+    #
+    # Physical nuclear initial states are instead stored
+    # inside NuclearCoordinateSpec.
+    vibrational_levels: tuple[
+        int, ...
+    ]
+
+    # --------------------------------------------------------
+    # Propagation
+    # --------------------------------------------------------
+
     t_final: float
     n_times: int
 
-    # Output options
+    # --------------------------------------------------------
+    # Output
+    # --------------------------------------------------------
+
     save_states: bool = False
 
-    # General GAN nuclear-dependent terms.
-    #
-    # These default to empty tuples so old configuration
-    # files remain valid.
+    # --------------------------------------------------------
+    # General GAN nuclear-dependent terms
+    # --------------------------------------------------------
+
     u0_terms: tuple[
         NuclearProductSpec, ...
     ] = field(
@@ -161,6 +265,18 @@ class GANConfig:
         default_factory=tuple
     )
 
+    # --------------------------------------------------------
+    # Physical nuclear coordinates
+    # --------------------------------------------------------
+    #
+    # Empty for old toy-model configurations.
+
+    nuclear_coordinates: tuple[
+        NuclearCoordinateSpec, ...
+    ] = field(
+        default_factory=tuple
+    )
+
     @property
     def n_orbitals(self) -> int:
         """Total number of electronic orbitals."""
@@ -168,6 +284,20 @@ class GANConfig:
         return (
             self.n_molecular_orbitals
             + self.n_metal_orbitals
+        )
+
+    @property
+    def uses_physical_nuclear_coordinates(
+        self,
+    ) -> bool:
+        """
+        True when the configuration uses explicit
+        physical nuclear coordinates instead of the
+        legacy harmonic-oscillator representation.
+        """
+
+        return bool(
+            self.nuclear_coordinates
         )
 
 
@@ -232,6 +362,96 @@ def _parse_nuclear_product(
     )
 
 
+def _parse_nuclear_basis(
+    raw: dict,
+) -> NuclearBasisSpec:
+    """
+    Parse the primitive basis of one
+    physical nuclear coordinate.
+    """
+
+    return NuclearBasisSpec(
+        kind=str(
+            raw["type"]
+        ).lower(),
+
+        size=int(
+            raw["size"]
+        ),
+
+        minimum=float(
+            raw["minimum"]
+        ),
+
+        maximum=float(
+            raw["maximum"]
+        ),
+
+        length_unit=str(
+            raw.get(
+                "length_unit",
+                "angstrom",
+            )
+        ).lower(),
+    )
+
+
+def _parse_nuclear_initial_state(
+    raw: dict,
+) -> NuclearInitialStateSpec:
+    """
+    Parse the initial state of one
+    physical nuclear coordinate.
+    """
+
+    kind = str(
+        raw["type"]
+    ).lower()
+
+    parameters = {
+        str(key): float(value)
+        for key, value in raw.items()
+        if key != "type"
+    }
+
+    return NuclearInitialStateSpec(
+        kind=kind,
+        parameters=parameters,
+    )
+
+
+def _parse_nuclear_coordinate(
+    raw: dict,
+) -> NuclearCoordinateSpec:
+    """
+    Parse one physical nuclear coordinate.
+    """
+
+    return NuclearCoordinateSpec(
+        name=str(
+            raw["name"]
+        ),
+
+        mode_type=str(
+            raw["mode_type"]
+        ).lower(),
+
+        mass_amu=float(
+            raw["mass_amu"]
+        ),
+
+        basis=_parse_nuclear_basis(
+            raw["basis"]
+        ),
+
+        initial_state=(
+            _parse_nuclear_initial_state(
+                raw["initial_state"]
+            )
+        ),
+    )
+
+
 # ============================================================
 # Configuration loading
 # ============================================================
@@ -240,35 +460,109 @@ def _parse_nuclear_product(
 def load_config(
     path: str | Path,
 ) -> GANConfig:
-    """Read and validate a YAML configuration file."""
+    """
+    Read and validate a YAML configuration file.
 
-    path = Path(path)
+    Two nuclear representations are supported:
+
+    1. Legacy:
+           vibrational:
+
+    2. Physical:
+           nuclear:
+               coordinates:
+
+    Exactly one must be present.
+    """
+
+    path = Path(
+        path
+    )
 
     with path.open(
         "r",
         encoding="utf-8",
     ) as file:
-        raw = yaml.safe_load(file)
 
-    model = raw["model"]
-    electronic = raw["electronic"]
-    vibrational = raw["vibrational"]
-    initial_state = raw["initial_state"]
-    propagation = raw["propagation"]
+        raw = yaml.safe_load(
+            file
+        )
+
+    # --------------------------------------------------------
+    # Required top-level sections
+    # --------------------------------------------------------
+
+    model = raw[
+        "model"
+    ]
+
+    electronic = raw[
+        "electronic"
+    ]
+
+    initial_state = raw[
+        "initial_state"
+    ]
+
+    propagation = raw[
+        "propagation"
+    ]
+
+    # --------------------------------------------------------
+    # Optional top-level sections
+    # --------------------------------------------------------
+
+    vibrational = raw.get(
+        "vibrational",
+        None,
+    )
 
     output = raw.get(
         "output",
         {},
     )
 
-    # Optional section.
-    #
-    # If it does not exist, all general GAN terms
-    # are simply empty.
     gan_terms = raw.get(
         "gan_terms",
         {},
     )
+
+    nuclear = raw.get(
+        "nuclear",
+        {},
+    )
+
+    nuclear_coordinates_raw = nuclear.get(
+        "coordinates",
+        [],
+    )
+
+    uses_physical_nuclear_coordinates = bool(
+        nuclear_coordinates_raw
+    )
+
+    # --------------------------------------------------------
+    # Choose exactly one nuclear representation
+    # --------------------------------------------------------
+
+    if (
+        vibrational is None
+        and not uses_physical_nuclear_coordinates
+    ):
+        raise ValueError(
+            "The configuration must define either "
+            "'vibrational' or 'nuclear.coordinates'."
+        )
+
+    if (
+        vibrational is not None
+        and uses_physical_nuclear_coordinates
+    ):
+        raise ValueError(
+            "Use either the legacy 'vibrational' section "
+            "or the physical 'nuclear.coordinates' section, "
+            "not both."
+        )
 
     n_vibrational_modes = int(
         model[
@@ -276,7 +570,117 @@ def load_config(
         ]
     )
 
+    # ========================================================
+    # Physical nuclear-coordinate representation
+    # ========================================================
+
+    if uses_physical_nuclear_coordinates:
+
+        parsed_nuclear_coordinates = tuple(
+            _parse_nuclear_coordinate(
+                coordinate
+            )
+            for coordinate
+            in nuclear_coordinates_raw
+        )
+
+        # Physical coordinates do not require fictitious
+        # harmonic frequencies.
+        frequencies = np.asarray(
+            [],
+            dtype=float,
+        )
+
+        basis_sizes = tuple(
+            coordinate.basis.size
+            for coordinate
+            in parsed_nuclear_coordinates
+        )
+
+        mode_types = tuple(
+            coordinate.mode_type
+            for coordinate
+            in parsed_nuclear_coordinates
+        )
+
+        # Kept only for backward compatibility with
+        # the current GANConfig interface.
+        #
+        # General Q-dependent terms are represented
+        # explicitly through gan_terms.
+        electron_vibration_couplings = np.zeros(
+            (
+                int(
+                    model[
+                        "n_molecular_orbitals"
+                    ]
+                ),
+                n_vibrational_modes,
+            ),
+            dtype=float,
+        )
+
+        # Physical initial states are stored directly
+        # in each NuclearCoordinateSpec.
+        vibrational_levels = tuple()
+
+    # ========================================================
+    # Legacy harmonic representation
+    # ========================================================
+
+    else:
+
+        parsed_nuclear_coordinates = tuple()
+
+        frequencies = np.asarray(
+            vibrational[
+                "frequencies"
+            ],
+            dtype=float,
+        )
+
+        basis_sizes = tuple(
+            int(value)
+            for value in vibrational[
+                "basis_sizes"
+            ]
+        )
+
+        electron_vibration_couplings = np.asarray(
+            vibrational[
+                "electron_vibration_couplings"
+            ],
+            dtype=float,
+        )
+
+        mode_types = tuple(
+            str(
+                value
+            ).lower()
+            for value in vibrational.get(
+                "mode_types",
+                [
+                    "unspecified"
+                    for _ in range(
+                        n_vibrational_modes
+                    )
+                ],
+            )
+        )
+
+        vibrational_levels = tuple(
+            int(value)
+            for value in initial_state[
+                "vibrational_levels"
+            ]
+        )
+
+    # ========================================================
+    # Construct GANConfig
+    # ========================================================
+
     config = GANConfig(
+
         # ----------------------------------------------------
         # Model size
         # ----------------------------------------------------
@@ -329,41 +733,23 @@ def load_config(
         ),
 
         # ----------------------------------------------------
-        # Vibrational parameters
+        # Nuclear / vibrational representation
         # ----------------------------------------------------
 
-        frequencies=np.asarray(
-            vibrational[
-                "frequencies"
-            ],
-            dtype=float,
+        frequencies=(
+            frequencies
         ),
 
-        basis_sizes=tuple(
-            int(value)
-            for value in vibrational[
-                "basis_sizes"
-            ]
+        basis_sizes=(
+            basis_sizes
         ),
 
-        electron_vibration_couplings=np.asarray(
-            vibrational[
-                "electron_vibration_couplings"
-            ],
-            dtype=float,
+        electron_vibration_couplings=(
+            electron_vibration_couplings
         ),
 
-        mode_types=tuple(
-            str(value).lower()
-            for value in vibrational.get(
-                "mode_types",
-                [
-                    "unspecified"
-                    for _ in range(
-                        n_vibrational_modes
-                    )
-                ],
-            )
+        mode_types=(
+            mode_types
         ),
 
         # ----------------------------------------------------
@@ -377,11 +763,8 @@ def load_config(
             ]
         ),
 
-        vibrational_levels=tuple(
-            int(value)
-            for value in initial_state[
-                "vibrational_levels"
-            ]
+        vibrational_levels=(
+            vibrational_levels
         ),
 
         # ----------------------------------------------------
@@ -432,17 +815,24 @@ def load_config(
         uij_terms=tuple(
             UijTermSpec(
                 i=int(
-                    term["i"]
+                    term[
+                        "i"
+                    ]
                 ),
+
                 j=int(
-                    term["j"]
+                    term[
+                        "j"
+                    ]
                 ),
+
                 nuclear=(
                     _parse_nuclear_product(
                         term
                     )
                 ),
             )
+
             for term in gan_terms.get(
                 "uij",
                 [],
@@ -456,17 +846,24 @@ def load_config(
         vij_terms=tuple(
             VijTermSpec(
                 i=int(
-                    term["i"]
+                    term[
+                        "i"
+                    ]
                 ),
+
                 j=int(
-                    term["j"]
+                    term[
+                        "j"
+                    ]
                 ),
+
                 nuclear=(
                     _parse_nuclear_product(
                         term
                     )
                 ),
             )
+
             for term in gan_terms.get(
                 "vij",
                 [],
@@ -480,21 +877,36 @@ def load_config(
         wik_terms=tuple(
             WikTermSpec(
                 i=int(
-                    term["i"]
+                    term[
+                        "i"
+                    ]
                 ),
+
                 k=int(
-                    term["k"]
+                    term[
+                        "k"
+                    ]
                 ),
+
                 nuclear=(
                     _parse_nuclear_product(
                         term
                     )
                 ),
             )
+
             for term in gan_terms.get(
                 "wik",
                 [],
             )
+        ),
+
+        # ----------------------------------------------------
+        # Physical nuclear coordinates
+        # ----------------------------------------------------
+
+        nuclear_coordinates=(
+            parsed_nuclear_coordinates
         ),
     )
 
@@ -513,7 +925,10 @@ def load_config(
 def validate_config(
     config: GANConfig,
 ) -> None:
-    """Check that all parameter dimensions are consistent."""
+    """
+    Check that all parameter dimensions and indices
+    are consistent.
+    """
 
     n_mol = (
         config.n_molecular_orbitals
@@ -527,9 +942,13 @@ def validate_config(
         config.n_vibrational_modes
     )
 
-    # --------------------------------------------------------
+    uses_physical_nuclear_coordinates = (
+        config.uses_physical_nuclear_coordinates
+    )
+
+    # ========================================================
     # Basic model size
-    # --------------------------------------------------------
+    # ========================================================
 
     if n_mol < 1:
         raise ValueError(
@@ -543,7 +962,7 @@ def validate_config(
 
     if n_modes < 1:
         raise ValueError(
-            "At least one vibrational mode is required."
+            "At least one nuclear mode is required."
         )
 
     if not (
@@ -556,24 +975,24 @@ def validate_config(
             "0 and n_orbitals."
         )
 
-    # --------------------------------------------------------
-    # Array dimensions
-    # --------------------------------------------------------
+    # ========================================================
+    # Array dimensions common to both representations
+    # ========================================================
 
     expected_shapes = {
         "molecular_energies": (
             n_mol,
         ),
+
         "metal_energies": (
             n_metal,
         ),
+
         "molecule_metal_couplings": (
             n_mol,
             n_metal,
         ),
-        "frequencies": (
-            n_modes,
-        ),
+
         "electron_vibration_couplings": (
             n_mol,
             n_modes,
@@ -590,9 +1009,6 @@ def validate_config(
         "molecule_metal_couplings":
             config.molecule_metal_couplings,
 
-        "frequencies":
-            config.frequencies,
-
         "electron_vibration_couplings":
             config.electron_vibration_couplings,
     }
@@ -603,7 +1019,9 @@ def validate_config(
     ) in expected_shapes.items():
 
         actual_shape = (
-            arrays[name].shape
+            arrays[
+                name
+            ].shape
         )
 
         if (
@@ -616,9 +1034,45 @@ def validate_config(
                 f"shape {actual_shape}."
             )
 
-    # --------------------------------------------------------
-    # Vibrational bases
-    # --------------------------------------------------------
+    # ========================================================
+    # Legacy frequencies
+    # ========================================================
+
+    if not uses_physical_nuclear_coordinates:
+
+        if (
+            config.frequencies.shape
+            != (n_modes,)
+        ):
+            raise ValueError(
+                "frequencies must contain one value "
+                "for each vibrational mode."
+            )
+
+        if np.any(
+            config.frequencies
+            <= 0
+        ):
+            raise ValueError(
+                "All vibrational frequencies "
+                "must be positive."
+            )
+
+    else:
+
+        if (
+            config.frequencies.size
+            != 0
+        ):
+            raise ValueError(
+                "Physical nuclear-coordinate "
+                "configurations must not define "
+                "legacy vibrational frequencies."
+            )
+
+    # ========================================================
+    # Primitive basis sizes
+    # ========================================================
 
     if (
         len(
@@ -628,7 +1082,7 @@ def validate_config(
     ):
         raise ValueError(
             "basis_sizes must contain one value "
-            "for each vibrational mode."
+            "for each nuclear mode."
         )
 
     if any(
@@ -636,13 +1090,13 @@ def validate_config(
         for size in config.basis_sizes
     ):
         raise ValueError(
-            "Every vibrational basis must contain "
+            "Every nuclear basis must contain "
             "at least two states."
         )
 
-    # --------------------------------------------------------
+    # ========================================================
     # Nuclear mode types
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
         len(
@@ -652,7 +1106,7 @@ def validate_config(
     ):
         raise ValueError(
             "mode_types must contain one value "
-            "for each vibrational mode."
+            "for each nuclear mode."
         )
 
     allowed_mode_types = {
@@ -665,6 +1119,7 @@ def validate_config(
     for mode_type in (
         config.mode_types
     ):
+
         if (
             mode_type
             not in allowed_mode_types
@@ -676,37 +1131,237 @@ def validate_config(
                 "unspecified."
             )
 
-    if (
-        len(
-            config.vibrational_levels
-        )
-        != n_modes
-    ):
-        raise ValueError(
-            "vibrational_levels must contain one "
-            "value for each vibrational mode."
-        )
+    # ========================================================
+    # Physical nuclear-coordinate representation
+    # ========================================================
 
-    for (
-        level,
-        basis_size,
-    ) in zip(
-        config.vibrational_levels,
-        config.basis_sizes,
-    ):
-        if not (
-            0
-            <= level
-            < basis_size
+    if uses_physical_nuclear_coordinates:
+
+        if (
+            len(
+                config.nuclear_coordinates
+            )
+            != n_modes
         ):
             raise ValueError(
-                "An initial vibrational level lies "
-                "outside its basis."
+                "The number of entries in "
+                "nuclear.coordinates must equal "
+                "n_vibrational_modes."
             )
 
-    # --------------------------------------------------------
+        if config.vibrational_levels:
+            raise ValueError(
+                "Physical nuclear-coordinate "
+                "configurations must not define "
+                "legacy vibrational_levels."
+            )
+
+        # ----------------------------------------------------
+        # Coordinate names must be unique
+        # ----------------------------------------------------
+
+        coordinate_names = [
+            coordinate.name
+            for coordinate
+            in config.nuclear_coordinates
+        ]
+
+        if (
+            len(
+                set(
+                    coordinate_names
+                )
+            )
+            != len(
+                coordinate_names
+            )
+        ):
+            raise ValueError(
+                "Physical nuclear-coordinate names "
+                "must be unique."
+            )
+
+        # ----------------------------------------------------
+        # Supported primitive bases
+        # ----------------------------------------------------
+
+        allowed_basis_kinds = {
+            "sine_dvr",
+            "sin_dvr",
+            "sine",
+        }
+
+        # ----------------------------------------------------
+        # Supported physical initial states
+        # ----------------------------------------------------
+
+        allowed_initial_state_kinds = {
+            "neutral_pes_eigenstate",
+            "gaussian",
+        }
+
+        # ----------------------------------------------------
+        # Validate each coordinate
+        # ----------------------------------------------------
+
+        for (
+            index,
+            coordinate,
+        ) in enumerate(
+            config.nuclear_coordinates
+        ):
+
+            if (
+                coordinate.mass_amu
+                <= 0
+            ):
+                raise ValueError(
+                    f"Nuclear coordinate "
+                    f"'{coordinate.name}' must have "
+                    "a positive mass_amu."
+                )
+
+            if (
+                coordinate.mode_type
+                not in allowed_mode_types
+            ):
+                raise ValueError(
+                    f"Unknown mode type "
+                    f"'{coordinate.mode_type}' for "
+                    f"coordinate '{coordinate.name}'."
+                )
+
+            if (
+                coordinate.basis.kind
+                not in allowed_basis_kinds
+            ):
+                raise ValueError(
+                    f"Unsupported basis type "
+                    f"'{coordinate.basis.kind}' for "
+                    f"coordinate '{coordinate.name}'. "
+                    "Currently supported physical "
+                    "basis types are: "
+                    "sine_dvr, sin_dvr, sine."
+                )
+
+            if (
+                coordinate.basis.size
+                < 2
+            ):
+                raise ValueError(
+                    f"Nuclear coordinate "
+                    f"'{coordinate.name}' must have "
+                    "at least two primitive basis states."
+                )
+
+            if not (
+                coordinate.basis.minimum
+                < coordinate.basis.maximum
+            ):
+                raise ValueError(
+                    f"Nuclear coordinate "
+                    f"'{coordinate.name}' must satisfy "
+                    "minimum < maximum."
+                )
+
+            if (
+                coordinate.basis.length_unit
+                not in {
+                    "angstrom",
+                    "bohr",
+                    "au",
+                }
+            ):
+                raise ValueError(
+                    f"Unsupported length unit "
+                    f"'{coordinate.basis.length_unit}' "
+                    f"for coordinate "
+                    f"'{coordinate.name}'."
+                )
+
+            if (
+                coordinate.initial_state.kind
+                not in allowed_initial_state_kinds
+            ):
+                raise ValueError(
+                    f"Unsupported initial-state type "
+                    f"'{coordinate.initial_state.kind}' "
+                    f"for coordinate "
+                    f"'{coordinate.name}'."
+                )
+
+            # Ensure derived convenience values are
+            # internally consistent.
+
+            if (
+                coordinate.basis.size
+                != config.basis_sizes[
+                    index
+                ]
+            ):
+                raise ValueError(
+                    f"basis_sizes is inconsistent with "
+                    f"nuclear coordinate "
+                    f"'{coordinate.name}'."
+                )
+
+            if (
+                coordinate.mode_type
+                != config.mode_types[
+                    index
+                ]
+            ):
+                raise ValueError(
+                    f"mode_types is inconsistent with "
+                    f"nuclear coordinate "
+                    f"'{coordinate.name}'."
+                )
+
+    # ========================================================
+    # Legacy harmonic representation
+    # ========================================================
+
+    else:
+
+        if config.nuclear_coordinates:
+            raise ValueError(
+                "Legacy vibrational configurations "
+                "must not define physical "
+                "nuclear_coordinates."
+            )
+
+        if (
+            len(
+                config.vibrational_levels
+            )
+            != n_modes
+        ):
+            raise ValueError(
+                "vibrational_levels must contain "
+                "one value for each vibrational mode."
+            )
+
+        for (
+            level,
+            basis_size,
+        ) in zip(
+            config.vibrational_levels,
+            config.basis_sizes,
+        ):
+
+            if not (
+                0
+                <= level
+                < basis_size
+            ):
+                raise ValueError(
+                    "An initial vibrational level lies "
+                    "outside its basis."
+                )
+
+    # ========================================================
     # Electronic initial state
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
         len(
@@ -730,12 +1385,14 @@ def validate_config(
         )
     ):
         raise ValueError(
-            "occupied_orbitals contains repeated indices."
+            "occupied_orbitals contains "
+            "repeated indices."
         )
 
     for orbital in (
         config.occupied_orbitals
     ):
+
         if not (
             0
             <= orbital
@@ -747,21 +1404,9 @@ def validate_config(
                 f"{config.n_orbitals - 1}."
             )
 
-    # --------------------------------------------------------
-    # Frequencies
-    # --------------------------------------------------------
-
-    if np.any(
-        config.frequencies
-        <= 0
-    ):
-        raise ValueError(
-            "All vibrational frequencies must be positive."
-        )
-
-    # --------------------------------------------------------
-    # General GAN terms
-    # --------------------------------------------------------
+    # ========================================================
+    # General GAN nuclear-dependent terms
+    # ========================================================
 
     all_nuclear_products = list(
         config.u0_terms
@@ -785,9 +1430,11 @@ def validate_config(
     for nuclear_product in (
         all_nuclear_products
     ):
+
         for factor in (
             nuclear_product.factors
         ):
+
             if not (
                 0
                 <= factor.mode
@@ -800,11 +1447,14 @@ def validate_config(
                     f"{n_modes - 1}."
                 )
 
-    # U_ij indices refer only to molecular orbitals.
+    # ========================================================
+    # U_ij indices
+    # ========================================================
 
     for term in (
         config.uij_terms
     ):
+
         if not (
             0
             <= term.i
@@ -812,7 +1462,8 @@ def validate_config(
         ):
             raise ValueError(
                 f"Uij molecular index i={term.i} "
-                "is outside the molecular orbital range."
+                "is outside the molecular "
+                "orbital range."
             )
 
         if not (
@@ -822,16 +1473,22 @@ def validate_config(
         ):
             raise ValueError(
                 f"Uij molecular index j={term.j} "
-                "is outside the molecular orbital range."
+                "is outside the molecular "
+                "orbital range."
             )
 
-    # V_ij indices also refer to molecular orbitals.
+    # ========================================================
+    # V_ij indices
+    # ========================================================
 
     for term in (
         config.vij_terms
     ):
 
-        if term.i >= term.j:
+        if (
+            term.i
+            >= term.j
+        ):
             raise ValueError(
                 "Vij terms must use i < j "
                 "to avoid double counting."
@@ -844,7 +1501,8 @@ def validate_config(
         ):
             raise ValueError(
                 f"Vij molecular index i={term.i} "
-                "is outside the molecular orbital range."
+                "is outside the molecular "
+                "orbital range."
             )
 
         if not (
@@ -854,10 +1512,13 @@ def validate_config(
         ):
             raise ValueError(
                 f"Vij molecular index j={term.j} "
-                "is outside the molecular orbital range."
+                "is outside the molecular "
+                "orbital range."
             )
 
-    # W_ik:
+    # ========================================================
+    # W_ik indices
+    # ========================================================
     #
     # i = molecular orbital index
     # k = metal orbital index
@@ -865,6 +1526,7 @@ def validate_config(
     for term in (
         config.wik_terms
     ):
+
         if not (
             0
             <= term.i
@@ -872,7 +1534,8 @@ def validate_config(
         ):
             raise ValueError(
                 f"Wik molecular index i={term.i} "
-                "is outside the molecular orbital range."
+                "is outside the molecular "
+                "orbital range."
             )
 
         if not (
@@ -882,19 +1545,26 @@ def validate_config(
         ):
             raise ValueError(
                 f"Wik metal index k={term.k} "
-                "is outside the metal orbital range."
+                "is outside the metal "
+                "orbital range."
             )
 
-    # --------------------------------------------------------
+    # ========================================================
     # Propagation
-    # --------------------------------------------------------
+    # ========================================================
 
-    if config.t_final <= 0:
+    if (
+        config.t_final
+        <= 0
+    ):
         raise ValueError(
             "t_final must be positive."
         )
 
-    if config.n_times < 2:
+    if (
+        config.n_times
+        < 2
+    ):
         raise ValueError(
             "n_times must be at least 2."
         )
