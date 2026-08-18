@@ -1,0 +1,647 @@
+metadata:
+  description: Physical 2D NO/Au(111) nonadiabatic scattering benchmark
+  physical_system: NO/Au(111)
+  nuclear_coordinates:
+  - 'r: N-O stretch'
+  - 'z: molecule-surface translation'
+  energy_unit_for_hamiltonian: hartree
+  coordinate_unit: angstrom
+  finite_bath_note: The explicit finite SQR bath is a numerical adaptation used for
+    ML-MCTDH and is not the same object as the finite-temperature HEOM pole decomposition.
+model:
+  n_molecular_orbitals: 1
+  n_metal_orbitals: 32
+  n_electrons: 16
+  n_vibrational_modes: 2
+electronic:
+  molecular_energies:
+  - 0.0
+  metal_energies:
+  - -1.8277283974139353
+  - -1.7865453504412492
+  - -1.7140170529376257
+  - -1.612748053780076
+  - -1.4863963836472873
+  - -1.3395282074908943
+  - -1.17745154472626
+  - -1.0060241877598979
+  - -0.8314419210228516
+  - -0.6600145640564897
+  - -0.4979379012918551
+  - -0.35106972513546225
+  - -0.22471805500267347
+  - -0.12344905584512385
+  - -0.05092075834150042
+  - -0.009737711368814251
+  - 0.009737711368814251
+  - 0.05092075834150042
+  - 0.12344905584512385
+  - 0.22471805500267347
+  - 0.35106972513546225
+  - 0.4979379012918551
+  - 0.6600145640564897
+  - 0.8314419210228516
+  - 1.0060241877598979
+  - 1.17745154472626
+  - 1.3395282074908943
+  - 1.4863963836472873
+  - 1.612748053780076
+  - 1.7140170529376257
+  - 1.7865453504412492
+  - 1.8277283974139353
+  molecule_metal_couplings:
+  - - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+nuclear:
+  coordinates:
+  - name: r
+    mode_type: reactive
+    mass_amu: 7.466433030552709
+    basis:
+      type: sine_dvr
+      size: 128
+      minimum: 0.7
+      maximum: 3.0
+      length_unit: angstrom
+    initial_state:
+      type: neutral_pes_eigenstate
+      level: 16.0
+  - name: z
+    mode_type: translational
+    mass_amu: 29.997988624
+    basis:
+      type: sine_dvr
+      size: 340
+      minimum: 0.53
+      maximum: 6.9
+      length_unit: angstrom
+    initial_state:
+      type: gaussian
+      center_angstrom: 5.0
+      kinetic_energy_ev: 1.0
+      momentum_au: -63.396573191139744
+      sigma_bohr: 0.31547446483740205
+      sigma_angstrom: 0.16694189741377294
+initial_state:
+  occupied_orbitals:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+propagation:
+  t_final: 14469.48066731374
+  n_times: 351
+output:
+  save_states: false
+gan_terms:
+  u0:
+  - coefficient: 1.0
+    factors:
+    - mode: 0
+      kind: morse
+      parameters:
+        depth: 0.2429130195810795
+        alpha: 2.7968
+        equilibrium: 1.151
+  - coefficient: 0.03674932217565499
+    factors:
+    - mode: 1
+      kind: exponential
+      parameters:
+        alpha: 1.9535
+        center: -0.26876
+  - coefficient: -0.001422198768197863
+    factors: []
+  uij:
+  - i: 0
+    j: 0
+    coefficient: 1.0
+    factors:
+    - mode: 0
+      kind: morse
+      parameters:
+        depth: 0.15261258513106005
+        alpha: 2.5194
+        equilibrium: 1.295
+  - i: 0
+    j: 0
+    coefficient: -1.0
+    factors:
+    - mode: 0
+      kind: morse
+      parameters:
+        depth: 0.2429130195810795
+        alpha: 2.7968
+        equilibrium: 1.151
+  - i: 0
+    j: 0
+    coefficient: 1.0
+    factors:
+    - mode: 1
+      kind: morse
+      parameters:
+        depth: 0.08882678663077569
+        alpha: 1.0015
+        equilibrium: 1.235
+  - i: 0
+    j: 0
+    coefficient: -0.03674932217565499
+    factors:
+    - mode: 1
+      kind: exponential
+      parameters:
+        alpha: 1.9535
+        center: -0.26876
+  - i: 0
+    j: 0
+    coefficient: 0.08920897958140252
+    factors: []
+  vij: []
+  wik:
+  - i: 0
+    k: 0
+    coefficient: 0.01479379578634174
+    factors: []
+  - i: 0
+    k: 0
+    coefficient: -0.01479379578634174
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 1
+    coefficient: 0.02240046341195492
+    factors: []
+  - i: 0
+    k: 1
+    coefficient: -0.02240046341195492
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 2
+    coefficient: 0.027694839540428968
+    factors: []
+  - i: 0
+    k: 2
+    coefficient: -0.027694839540428968
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 3
+    coefficient: 0.03169454619591692
+    factors: []
+  - i: 0
+    k: 3
+    coefficient: -0.03169454619591692
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 4
+    coefficient: 0.034724420537288976
+    factors: []
+  - i: 0
+    k: 4
+    coefficient: -0.034724420537288976
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 5
+    coefficient: 0.036924906393482115
+    factors: []
+  - i: 0
+    k: 5
+    coefficient: -0.036924906393482115
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 6
+    coefficient: 0.03836449452942447
+    factors: []
+  - i: 0
+    k: 6
+    coefficient: -0.03836449452942447
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 7
+    coefficient: 0.03907716397980702
+    factors: []
+  - i: 0
+    k: 7
+    coefficient: -0.03907716397980702
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 8
+    coefficient: 0.03907716397980702
+    factors: []
+  - i: 0
+    k: 8
+    coefficient: -0.03907716397980702
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 9
+    coefficient: 0.03836449452942447
+    factors: []
+  - i: 0
+    k: 9
+    coefficient: -0.03836449452942447
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 10
+    coefficient: 0.036924906393482115
+    factors: []
+  - i: 0
+    k: 10
+    coefficient: -0.036924906393482115
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 11
+    coefficient: 0.034724420537288976
+    factors: []
+  - i: 0
+    k: 11
+    coefficient: -0.034724420537288976
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 12
+    coefficient: 0.03169454619591692
+    factors: []
+  - i: 0
+    k: 12
+    coefficient: -0.03169454619591692
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 13
+    coefficient: 0.027694839540428968
+    factors: []
+  - i: 0
+    k: 13
+    coefficient: -0.027694839540428968
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 14
+    coefficient: 0.02240046341195492
+    factors: []
+  - i: 0
+    k: 14
+    coefficient: -0.02240046341195492
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 15
+    coefficient: 0.01479379578634174
+    factors: []
+  - i: 0
+    k: 15
+    coefficient: -0.01479379578634174
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 16
+    coefficient: 0.01479379578634174
+    factors: []
+  - i: 0
+    k: 16
+    coefficient: -0.01479379578634174
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 17
+    coefficient: 0.02240046341195492
+    factors: []
+  - i: 0
+    k: 17
+    coefficient: -0.02240046341195492
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 18
+    coefficient: 0.027694839540428968
+    factors: []
+  - i: 0
+    k: 18
+    coefficient: -0.027694839540428968
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 19
+    coefficient: 0.03169454619591692
+    factors: []
+  - i: 0
+    k: 19
+    coefficient: -0.03169454619591692
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 20
+    coefficient: 0.034724420537288976
+    factors: []
+  - i: 0
+    k: 20
+    coefficient: -0.034724420537288976
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 21
+    coefficient: 0.036924906393482115
+    factors: []
+  - i: 0
+    k: 21
+    coefficient: -0.036924906393482115
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 22
+    coefficient: 0.03836449452942447
+    factors: []
+  - i: 0
+    k: 22
+    coefficient: -0.03836449452942447
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 23
+    coefficient: 0.03907716397980702
+    factors: []
+  - i: 0
+    k: 23
+    coefficient: -0.03907716397980702
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 24
+    coefficient: 0.03907716397980702
+    factors: []
+  - i: 0
+    k: 24
+    coefficient: -0.03907716397980702
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 25
+    coefficient: 0.03836449452942447
+    factors: []
+  - i: 0
+    k: 25
+    coefficient: -0.03836449452942447
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 26
+    coefficient: 0.036924906393482115
+    factors: []
+  - i: 0
+    k: 26
+    coefficient: -0.036924906393482115
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 27
+    coefficient: 0.034724420537288976
+    factors: []
+  - i: 0
+    k: 27
+    coefficient: -0.034724420537288976
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 28
+    coefficient: 0.03169454619591692
+    factors: []
+  - i: 0
+    k: 28
+    coefficient: -0.03169454619591692
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 29
+    coefficient: 0.027694839540428968
+    factors: []
+  - i: 0
+    k: 29
+    coefficient: -0.027694839540428968
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 30
+    coefficient: 0.02240046341195492
+    factors: []
+  - i: 0
+    k: 30
+    coefficient: -0.02240046341195492
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+  - i: 0
+    k: 31
+    coefficient: 0.01479379578634174
+    factors: []
+  - i: 0
+    k: 31
+    coefficient: -0.01479379578634174
+    factors:
+    - mode: 1
+      kind: tanh
+      parameters:
+        alpha: 0.1
+        center: 0.0
+physical_parameters:
+  neutral_surface:
+    r0_angstrom: 1.151
+    a0_inv_angstrom: 2.7968
+    D0_ev: 6.61
+    b0_inv_angstrom: 1.9535
+    z0_angstrom: -0.26876
+    c0_ev: 6.5713
+  anionic_surface:
+    r1_angstrom: 1.295
+    a1_inv_angstrom: 2.5194
+    D1_ev: 4.1528
+    z1_angstrom: 1.235
+    a2_inv_angstrom: 1.0015
+    D2_ev: 2.4171
+    c1_ev: 8.9587
+  molecule_metal:
+    gamma_ev: 1.5
+    a_tilde_angstrom: 10.0
+  literature_reservoir:
+    temperature_k: 300.0
+    chemical_potential_ev: 0.0
+    width_ev: 50.0
+  explicit_sqr_bath:
+    n_orbitals: 32
+    bandwidth_ev: 100.0
+    chemical_potential_ev: 0.0
+    temperature_k: 0.0
+    discretization: split_gauss_legendre_flat

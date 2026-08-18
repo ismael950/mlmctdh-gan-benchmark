@@ -862,12 +862,42 @@ def run_heidelberg(
             decision.rank_updates,
         )
 
-        shutil.copy2(
-            source_directory
-            / "benchmark.op",
-            destination_directory
-            / "benchmark.op",
-        )
+        # ----------------------------------------------------
+        # Copy Heidelberg support files
+        # ----------------------------------------------------
+        #
+        # benchmark.inp is generated separately above because
+        # its ML ranks and run name must be updated.
+        #
+        # Every other file in the run directory is treated as
+        # a static support file. This includes benchmark.op as
+        # well as external tabulated potentials/couplings used
+        # by physical-coordinate benchmarks.
+        # ----------------------------------------------------
+
+        for source_path in source_directory.iterdir():
+
+            if source_path.name == "benchmark.inp":
+                continue
+
+            destination_path = (
+                destination_directory
+                / source_path.name
+            )
+
+            if source_path.is_file():
+
+                shutil.copy2(
+                    source_path,
+                    destination_path,
+                )
+
+            elif source_path.is_dir():
+
+                shutil.copytree(
+                    source_path,
+                    destination_path,
+                )
 
         print()
         print(
