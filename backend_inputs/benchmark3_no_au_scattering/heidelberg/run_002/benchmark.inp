@@ -13,7 +13,7 @@
 
 RUN-SECTION
 
-name = ../../../../results/benchmark3_no_au_scattering/heidelberg/run_001/raw
+name = ../../../../results/benchmark3_no_au_scattering/heidelberg/run_002/raw
 
 propagate
 
@@ -114,7 +114,7 @@ ML-BASIS-SECTION
 
 0> 4 4
 
-    1> 2 4 4
+    1> 2 8 4
         2> [d]
         2> 4 4
             3> 4 4
