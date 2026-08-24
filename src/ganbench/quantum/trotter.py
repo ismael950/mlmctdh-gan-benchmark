@@ -7,10 +7,7 @@ import numpy as np
 from ganbench.quantum.toy_model import QuantumToyGAN
 
 from ganbench.quantum.fragments import (
-    hopping_fragment_propagator,
-)
-from ganbench.quantum.space import (
-    lift_electronic,
+    apply_qdependent_hopping_fragment,
 )
 from ganbench.quantum.diagonal_functions import (
     occupation_table,
@@ -344,24 +341,17 @@ class GANAlgorithmTrotter:
             dt,
         )
 
-        # Hopping fragments
+        # Coordinate-dependent hopping fragments
         for matching in self.model.matchings:
-
-            propagator_el = (
-                hopping_fragment_propagator(
+            result = (
+                apply_qdependent_hopping_fragment(
+                    result,
                     matching,
-                    self.model.hopping_couplings,
+                    self.model.hopping_profiles,
                     self.model.n_electronic_orbitals,
                     dt,
                 )
             )
-
-            propagator = lift_electronic(
-                propagator_el,
-                self.model.nuclear_dimension,
-            )
-
-            result = propagator @ result
 
         # Final fragment:
         # metal energies + nuclear kinetic evolution

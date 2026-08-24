@@ -244,3 +244,157 @@ def hopping_fragment_propagator(
         @ diagonal_propagator
         @ unitary.conj().T
     )
+
+def apply_qdependent_hopping_fragment(
+    state: np.ndarray,
+    matching: Matching,
+    profiles: dict[
+        tuple[int, int],
+        np.ndarray,
+    ],
+    n_orbitals: int,
+    dt: float,
+) -> np.ndarray:
+    """
+    Apply one coordinate-dependent GAN hopping
+    fragment
+
+        F_s(Q) =
+            sum_(i,j in matching)
+            g_ij(Q)
+            (a_i^dagger a_j + a_j^dagger a_i)
+
+    using the GAN Clifford diagonalization.
+
+    After the electronic basis transformation,
+
+        D_s(Q) =
+            sum_(i,j)
+            g_ij(Q) (Z_i - Z_j) / 2,
+
+    which is diagonal jointly in the electronic
+    occupation basis and nuclear position basis.
+    """
+    n_el = 2**n_orbitals
+
+    if not matching:
+        return np.asarray(
+            state,
+            dtype=complex,
+        ).copy()
+
+    first_edge = (
+        min(matching[0][0], matching[0][1]),
+        max(matching[0][0], matching[0][1]),
+    )
+
+    if first_edge not in profiles:
+        raise KeyError(
+            f"No hopping profile supplied "
+            f"for edge {first_edge}"
+        )
+
+    n_nuc = len(
+        profiles[first_edge]
+    )
+
+    state = np.asarray(
+        state,
+        dtype=complex,
+    )
+
+    if state.shape != (
+        n_el * n_nuc,
+    ):
+        raise ValueError(
+            "State dimension is inconsistent "
+            "with electronic and nuclear spaces"
+        )
+
+    unitary = matching_unitary(
+        list(matching),
+        n_orbitals,
+    )
+
+    # Product basis:
+    #
+    # |electronic> tensor |Q>
+    state_grid = state.reshape(
+        n_el,
+        n_nuc,
+    )
+
+    # Transform to the basis where the
+    # hopping fragment is diagonal.
+    state_grid = (
+        unitary.conj().T
+        @ state_grid
+    )
+
+    diagonal_energies = np.zeros(
+        (
+            n_el,
+            n_nuc,
+        ),
+        dtype=float,
+    )
+
+    for i, j in matching:
+        edge = (
+            min(i, j),
+            max(i, j),
+        )
+
+        if edge not in profiles:
+            raise KeyError(
+                f"No hopping profile supplied "
+                f"for edge {edge}"
+            )
+
+        profile = np.asarray(
+            profiles[edge],
+            dtype=float,
+        )
+
+        if profile.shape != (n_nuc,):
+            raise ValueError(
+                f"Invalid profile shape "
+                f"for edge {edge}"
+            )
+
+        z_i = np.diag(
+            pauli_z_operator(
+                i,
+                n_orbitals,
+            )
+        ).real
+
+        z_j = np.diag(
+            pauli_z_operator(
+                j,
+                n_orbitals,
+            )
+        ).real
+
+        diagonal_energies += (
+            0.5
+            * (
+                z_i[:, None]
+                - z_j[:, None]
+            )
+            * profile[None, :]
+        )
+
+    state_grid *= np.exp(
+        -1.0j
+        * dt
+        * diagonal_energies
+    )
+
+    # Transform back.
+    state_grid = (
+        unitary
+        @ state_grid
+    )
+
+    return state_grid.reshape(-1)

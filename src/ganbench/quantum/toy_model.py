@@ -5,10 +5,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from ganbench.quantum.fermions import (
+    hopping_operator,
     number_operator,
-)
-from ganbench.quantum.fragments import (
-    hopping_fragment,
 )
 from ganbench.quantum.matchings import (
     Matching,
@@ -27,6 +25,30 @@ from ganbench.quantum.diagonal_functions import (
     DiagonalFunctionExpansion,
     build_f0_function_expansion,
 )
+
+def molecule_metal_switching_profile(
+    points: np.ndarray,
+    center: float = 0.0,
+    width: float = 1.0,
+) -> np.ndarray:
+    """
+    Smooth molecule-metal coupling profile.
+
+    The coupling is stronger for smaller Q
+    (molecule closer to the metal) and weaker
+    for larger Q.
+    """
+    if width <= 0.0:
+        raise ValueError("width must be positive")
+
+    points = np.asarray(points, dtype=float)
+
+    return 0.5 * (
+        1.0
+        - np.tanh(
+            (points - center) / width
+        )
+    )
 
 @dataclass(frozen=True)
 class QuantumToyGAN:
@@ -48,6 +70,7 @@ class QuantumToyGAN:
 
     matchings: tuple[Matching, ...]
     hopping_couplings: dict[tuple[int, int], float]
+    hopping_profiles: dict[tuple[int, int], np.ndarray]
 
     f0_expansion: DiagonalFunctionExpansion
 
@@ -183,21 +206,61 @@ def build_quantum_toy_gan() -> QuantumToyGAN:
         couplings[(0, j)] = 0.00025
         couplings[(1, j)] = 0.00020
 
+    switching = molecule_metal_switching_profile(
+        grid.points,
+    )
+
+    hopping_profiles: dict[
+        tuple[int, int],
+        np.ndarray,
+    ] = {
+        # Molecular-molecular hopping remains constant.
+        (0, 1): np.full(
+            nuclear_dimension,
+            couplings[(0, 1)],
+            dtype=float,
+        ),
+    }
+
+    for j in range(2, 6):
+        hopping_profiles[(0, j)] = (
+            couplings[(0, j)] * switching
+        )
+        hopping_profiles[(1, j)] = (
+            couplings[(1, j)] * switching
+        )
+
     hopping_fragments = []
 
     for matching in matchings:
-        electronic_fragment = hopping_fragment(
-            matching,
-            couplings,
-            n_orbitals,
+        fragment = np.zeros(
+            (
+                electronic_dimension
+                * nuclear_dimension,
+                electronic_dimension
+                * nuclear_dimension,
+            ),
+            dtype=complex,
         )
 
-        hopping_fragments.append(
-            lift_electronic(
-                electronic_fragment,
-                nuclear_dimension,
+        for i, j in matching:
+            edge = (
+                min(i, j),
+                max(i, j),
             )
-        )
+
+            fragment += coupled_operator(
+                hopping_operator(
+                    i,
+                    j,
+                    n_orbitals,
+                ),
+                np.diag(
+                    hopping_profiles[edge]
+                ),
+            )
+
+        hopping_fragments.append(fragment)
 
     # -------------------------------------------------
     # Final fragment:
@@ -248,11 +311,12 @@ def build_quantum_toy_gan() -> QuantumToyGAN:
         n_electronic_orbitals=n_orbitals,
         electronic_dimension=electronic_dimension,
         nuclear_dimension=nuclear_dimension,
-        matchings=matchings,
-        hopping_couplings=couplings,
-        f0_expansion=f0_expansion,
-        metal_energies=metal_energies,
         molecular_energies=molecular_energies,
         linear_couplings=linear_couplings,
         u0_quadratic=0.0001,
+        matchings=matchings,
+        hopping_couplings=couplings,
+        hopping_profiles=hopping_profiles,
+        f0_expansion=f0_expansion,
+        metal_energies=metal_energies,
     )

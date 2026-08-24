@@ -341,47 +341,95 @@ def apply_matching_clifford_to_state(
 
 def apply_diagonal_hopping_phase(
     matching: tuple[tuple[int, int], ...],
-    couplings: dict[tuple[int, int], float],
+    profiles: dict[
+        tuple[int, int],
+        np.ndarray,
+    ],
     dt: float,
 ) -> None:
     """
     Apply
 
-        exp(-i D_s dt)
+        exp[-i D_s(Q) dt]
 
-    where
+    with
 
-        D_s = sum_(i,j)
-              g_ij (Z_i - Z_j) / 2.
+        D_s(Q) =
+            sum_(i,j)
+            g_ij(Q) (Z_i - Z_j) / 2.
 
-    Since all Z terms commute, this is just a
-    sequence of single-qubit RZ rotations.
+    Each edge is diagonal jointly in the
+    electronic Z basis and nuclear Q basis.
     """
     for i, j in matching:
-        edge = (min(i, j), max(i, j))
-
-        if edge not in couplings:
-            raise KeyError(
-                f"No coupling supplied for edge {edge}"
-            )
-
-        g = couplings[edge]
-
-        # RZ(phi) = exp(-i phi Z / 2)
-        qml.RZ(
-            g * dt,
-            wires=i,
+        edge = (
+            min(i, j),
+            max(i, j),
         )
 
-        qml.RZ(
-            -g * dt,
-            wires=j,
+        if edge not in profiles:
+            raise KeyError(
+                f"No hopping profile supplied "
+                f"for edge {edge}"
+            )
+
+        profile = np.asarray(
+            profiles[edge],
+            dtype=float,
+        )
+
+        if profile.shape != (
+            2**N_NUCLEAR_QUBITS,
+        ):
+            raise ValueError(
+                f"Invalid hopping profile shape "
+                f"for edge {edge}"
+            )
+
+        phases = np.empty(
+            (
+                2,
+                2,
+                2**N_NUCLEAR_QUBITS,
+            ),
+            dtype=complex,
+        )
+
+        for bit_i in (0, 1):
+            z_i = 1.0 - 2.0 * bit_i
+
+            for bit_j in (0, 1):
+                z_j = 1.0 - 2.0 * bit_j
+
+                energy = (
+                    0.5
+                    * (z_i - z_j)
+                    * profile
+                )
+
+                phases[
+                    bit_i,
+                    bit_j,
+                    :,
+                ] = np.exp(
+                    -1.0j
+                    * dt
+                    * energy
+                )
+
+        qml.DiagonalQubitUnitary(
+            phases.reshape(-1),
+            wires=[
+                i,
+                j,
+                *NUCLEAR_WIRES,
+            ],
         )
 
 
 def apply_hopping_fragment_circuit(
     matching: tuple[tuple[int, int], ...],
-    couplings: dict[tuple[int, int], float],
+    profiles: dict[tuple[int, int], np.ndarray],
     dt: float,
 ) -> None:
     """
@@ -404,7 +452,7 @@ def apply_hopping_fragment_circuit(
     # Apply the diagonal evolution.
     apply_diagonal_hopping_phase(
         matching,
-        couplings,
+        profiles,
         dt,
     )
 
@@ -417,7 +465,7 @@ def apply_hopping_fragment_circuit(
 def apply_hopping_fragment_to_state(
     initial_state: np.ndarray,
     matching: tuple[tuple[int, int], ...],
-    couplings: dict[tuple[int, int], float],
+    profiles: dict[tuple[int, int], np.ndarray],
     dt: float,
 ) -> np.ndarray:
     """
@@ -443,7 +491,7 @@ def apply_hopping_fragment_to_state(
 
         apply_hopping_fragment_circuit(
             matching,
-            couplings,
+            profiles,
             dt,
         )
 
@@ -459,7 +507,7 @@ def apply_all_hopping_fragments_circuit(
         tuple[tuple[int, int], ...],
         ...
     ],
-    couplings: dict[tuple[int, int], float],
+    profiles: dict[tuple[int, int], np.ndarray],
     dt: float,
 ) -> None:
     """
@@ -476,7 +524,7 @@ def apply_all_hopping_fragments_circuit(
     for matching in matchings:
         apply_hopping_fragment_circuit(
             matching,
-            couplings,
+            profiles,
             dt,
         )
 
@@ -487,7 +535,7 @@ def apply_all_hopping_fragments_to_state(
         tuple[tuple[int, int], ...],
         ...
     ],
-    couplings: dict[tuple[int, int], float],
+    profiles: dict[tuple[int, int], np.ndarray],
     dt: float,
 ) -> np.ndarray:
     """
@@ -513,7 +561,7 @@ def apply_all_hopping_fragments_to_state(
 
         apply_all_hopping_fragments_circuit(
             matchings,
-            couplings,
+            profiles,
             dt,
         )
 
@@ -654,7 +702,7 @@ def apply_gan_trotter_step_circuit(
     # 2. All hopping matchings
     apply_all_hopping_fragments_circuit(
         model.matchings,
-        model.hopping_couplings,
+        model.hopping_profiles,
         dt,
     )
 
