@@ -14,8 +14,8 @@ from ganbench.quantum.matchings import (
     Matching,
     gan_matchings,
 )
-from ganbench.quantum.nuclear import (
-    NuclearGrid,
+from ganbench.nuclear_grid import (
+    PeriodicNuclearGrid,
     build_periodic_nuclear_grid,
 )
 from ganbench.quantum.space import (
@@ -36,7 +36,7 @@ class QuantumToyGAN:
     hopping_fragments: tuple[np.ndarray, ...]
     f_last: np.ndarray
 
-    nuclear_grid: NuclearGrid
+    nuclear_grid: PeriodicNuclearGrid
 
     n_electronic_orbitals: int
     electronic_dimension: int
@@ -84,9 +84,7 @@ def build_quantum_toy_gan() -> QuantumToyGAN:
     omega = 0.0002
 
     grid = build_periodic_nuclear_grid(
-        n_points=8,
-        q_min=-4.0,
-        q_max=4.0,
+        size=8,
         mass=1.0 / omega,
     )
 
