@@ -1,0 +1,97 @@
+#######################################################################
+### Small direct benchmark: K=32 ML-MCTDH/SQR smoke test
+### Same Hamiltonian as the exact + quantum reference.
+#######################################################################
+
+RUN-SECTION
+
+name = ../../../../results/small_direct_benchmark/heidelberg/K32_smoke/raw
+
+propagate
+time-not-fs
+energy-not-eV
+
+tout   = 1.0
+tpsi   = 10.0
+tfinal = 10.0
+
+steps
+psi = double
+
+expect = real-only, nd1, nd2, nc1, nc2, nc3, nc4, Qmean
+
+end-run-section
+
+
+OPERATOR-SECTION
+
+opname = benchmark
+oppath = .
+
+end-operator-section
+
+
+PBASIS-SECTION
+
+d1     sin      2     -0.5     0.5     spin
+d2     sin      2     -0.5     0.5     spin
+
+c1     sin      2     -0.5     0.5     spin
+c2     sin      2     -0.5     0.5     spin
+c3     sin      2     -0.5     0.5     spin
+c4     sin      2     -0.5     0.5     spin
+
+# Exact same set of Q grid points as the K=32 Python reference,
+# sorted increasingly.  "linear" gives dx=(xf-xi)/(N-1).
+Q      FFT      32    -7.0898154036220635    6.646701940895684    linear
+
+end-PBASIS-SECTION
+
+
+ML-BASIS-SECTION
+
+# Initial electronic-nuclear Schmidt rank = 4.
+0> 4 4
+
+    # Each two-orbital fermionic group uses its complete local
+    # primitive space (2 x 2 = 4).
+    1> 4 4 4
+        2> [d1 d2]
+        2> [c1 c2]
+        2> [c3 c4]
+
+    1> [Q]
+
+end-ML-BASIS-SECTION
+
+
+INTEGRATOR-SECTION
+
+VMF
+RK8 = 1.0d-10, 1.0d-8
+
+end-INTEGRATOR-SECTION
+
+
+INIT_WF-SECTION
+
+build
+
+# Occupied electronic orbitals [d1,c1,c2] = Python [0,2,3].
+d1     euclid    2
+d2     euclid    1
+c1     euclid    2
+c2     euclid    2
+c3     euclid    1
+c4     euclid    1
+
+# Python amplitude exp(-Q^2/2).
+# Heidelberg gauss uses exp[-1/4*(Q/dQ)^2], so dQ=1/sqrt(2).
+Q      gauss     0.0     0.0     0.7071067811865475
+
+end-build
+
+end-INIT_WF-SECTION
+
+
+END-INPUT

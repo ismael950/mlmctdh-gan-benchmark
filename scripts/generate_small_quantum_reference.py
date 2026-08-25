@@ -67,9 +67,14 @@ def main() -> None:
             "Exact reference time grid is not uniform."
         )
 
-    dt = float(dts[0])
+    output_dt = float(dts[0])
 
-    model = build_quantum_toy_gan()
+    substeps_per_output = 4
+    dt = output_dt / substeps_per_output
+
+    model = build_quantum_toy_gan(
+        nuclear_size=32,
+    )
 
     electronic = electronic_basis_state(
         [0, 2, 3],
@@ -118,10 +123,11 @@ def main() -> None:
     ]
 
     for _ in range(1, len(times)):
-        state = propagator.step(
-            state,
-            dt,
-        )
+        for _ in range(substeps_per_output):
+            state = propagator.step(
+                state,
+                dt,
+            )
 
         quantum_n0.append(
             expectation(state, n0_operator)
@@ -217,7 +223,8 @@ def main() -> None:
         ),
         "trotter_step_au": dt,
         "n_trotter_steps": int(
-            len(times) - 1
+            (len(times) - 1)
+            * substeps_per_output
         ),
         "total_time_au": float(times[-1]),
         "global_error_definition": (
@@ -252,7 +259,7 @@ def main() -> None:
     print("Trotter dt =", dt, "a.u.")
     print(
         "Number of Trotter steps =",
-        len(times) - 1,
+        (len(times) - 1) * substeps_per_output,
     )
     print(
         "E_quantum =",

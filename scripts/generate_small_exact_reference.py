@@ -24,7 +24,9 @@ def expectation(state: np.ndarray, operator: np.ndarray) -> float:
 
 
 def main() -> None:
-    model = build_quantum_toy_gan()
+    model = build_quantum_toy_gan(
+        nuclear_size=32,
+    )
 
     # Canonical initial condition for the direct benchmark.
     occupied_orbitals = [0, 2, 3]

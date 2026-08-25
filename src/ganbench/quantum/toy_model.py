@@ -79,7 +79,9 @@ class QuantumToyGAN:
     def total_dimension(self) -> int:
         return self.hamiltonian.shape[0]
 
-def build_quantum_toy_gan() -> QuantumToyGAN:
+def build_quantum_toy_gan(
+    nuclear_size: int = 8,
+) -> QuantumToyGAN:
     """
     Small GAN model derived from Benchmark 2.
 
@@ -107,7 +109,7 @@ def build_quantum_toy_gan() -> QuantumToyGAN:
     omega = 0.0002
 
     grid = build_periodic_nuclear_grid(
-        size=8,
+        size=nuclear_size,
         mass=1.0 / omega,
     )
 
