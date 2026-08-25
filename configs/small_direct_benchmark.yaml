@@ -1,0 +1,31 @@
+model:
+  n_molecular_orbitals: 2
+  n_metal_orbitals: 4
+  n_electrons: 3
+  n_vibrational_modes: 1
+
+electronic:
+  molecular_energies: [0.003, 0.005]
+  metal_energies: [-0.003, -0.001, 0.001, 0.003]
+  molecule_metal_couplings:
+    - [0.00025, 0.00025, 0.00025, 0.00025]
+    - [0.00020, 0.00020, 0.00020, 0.00020]
+
+vibrational:
+  frequencies: [0.0002]
+  basis_sizes: [32]
+  mode_types: [nonreactive]
+  electron_vibration_couplings:
+    - [0.0]
+    - [0.0]
+
+initial_state:
+  occupied_orbitals: [0, 2, 3]
+  vibrational_levels: [0]
+
+propagation:
+  t_final: 2000.0
+  n_times: 201
+
+output:
+  save_states: false
