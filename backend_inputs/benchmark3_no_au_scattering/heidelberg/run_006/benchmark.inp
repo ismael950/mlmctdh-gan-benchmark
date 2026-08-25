@@ -1,0 +1,228 @@
+#######################################################################
+### Benchmark 3: physical NO/Au(111) scattering
+### ML-MCTDH/SQR
+###
+### Nuclear coordinates:
+###   r = N-O stretch
+###   z = molecule-surface translation
+###
+### Electronic representation:
+###   d     = active molecular orbital
+###   c1... = explicit finite Au bath
+#######################################################################
+
+RUN-SECTION
+
+name = ../../../../results/benchmark3_no_au_scattering/heidelberg/run_006/raw
+
+propagate
+
+time-not-fs
+energy-not-eV
+
+tout   = 41.3413733351821
+tpsi   = 2067.06866675911
+tfinal = 2067.06866675911
+
+steps
+psi = double
+
+expect = real-only, nd, nc1, nc2, nc3, nc4, nc5, nc6, nc7, nc8, nc9, nc10, nc11, nc12, nc13, nc14, nc15, nc16, nc17, nc18, nc19, nc20, nc21, nc22, nc23, nc24, nc25, nc26, nc27, nc28, nc29, nc30, nc31, nc32, rmean, zmean
+
+end-run-section
+
+
+#######################################################################
+### Operator
+#######################################################################
+
+OPERATOR-SECTION
+
+opname = benchmark
+oppath = .
+
+end-operator-section
+
+
+#######################################################################
+### Primitive basis
+#######################################################################
+
+PBASIS-SECTION
+
+d      sin      2     -0.5     0.5     spin
+c1     sin      2     -0.5     0.5     spin
+c2     sin      2     -0.5     0.5     spin
+c3     sin      2     -0.5     0.5     spin
+c4     sin      2     -0.5     0.5     spin
+c5     sin      2     -0.5     0.5     spin
+c6     sin      2     -0.5     0.5     spin
+c7     sin      2     -0.5     0.5     spin
+c8     sin      2     -0.5     0.5     spin
+c9     sin      2     -0.5     0.5     spin
+c10    sin      2     -0.5     0.5     spin
+c11    sin      2     -0.5     0.5     spin
+c12    sin      2     -0.5     0.5     spin
+c13    sin      2     -0.5     0.5     spin
+c14    sin      2     -0.5     0.5     spin
+c15    sin      2     -0.5     0.5     spin
+c16    sin      2     -0.5     0.5     spin
+c17    sin      2     -0.5     0.5     spin
+c18    sin      2     -0.5     0.5     spin
+c19    sin      2     -0.5     0.5     spin
+c20    sin      2     -0.5     0.5     spin
+c21    sin      2     -0.5     0.5     spin
+c22    sin      2     -0.5     0.5     spin
+c23    sin      2     -0.5     0.5     spin
+c24    sin      2     -0.5     0.5     spin
+c25    sin      2     -0.5     0.5     spin
+c26    sin      2     -0.5     0.5     spin
+c27    sin      2     -0.5     0.5     spin
+c28    sin      2     -0.5     0.5     spin
+c29    sin      2     -0.5     0.5     spin
+c30    sin      2     -0.5     0.5     spin
+c31    sin      2     -0.5     0.5     spin
+c32    sin      2     -0.5     0.5     spin
+
+r      sin      128   1.322808287238 5.669178373877 short
+z      sin      340   1.001554846052 13.039110259918 short
+
+end-PBASIS-SECTION
+
+
+#######################################################################
+### ML-MCTDH tree
+###
+###                         ROOT
+###                      /        \
+###               ELECTRONIC      NUCLEAR
+###              /    |    \       /   \
+###             d   METAL- METAL+  r     z
+###
+### Metal states are sorted by energy.
+### METAL- contains epsilon_k < mu.
+### METAL+ contains epsilon_k > mu.
+###
+### The metal sectors are recursively split into balanced
+### binary energy-ordered subtrees.
+###
+### The topology remains fixed during adaptive convergence.
+### Only ML ranks are increased.
+#######################################################################
+
+ML-BASIS-SECTION
+
+0> 12 12
+
+    1> 2 12 12
+        2> [d]
+        2> 4 12
+            3> 4 4
+                4> 4 4
+                    5> [c1 c2]
+                    5> [c3 c4]
+                4> 4 4
+                    5> [c5 c6]
+                    5> [c7 c8]
+            3> 8 8
+                4> 4 4
+                    5> [c9 c10]
+                    5> [c11 c12]
+                4> 4 4
+                    5> [c13 c14]
+                    5> [c15 c16]
+        2> 8 4
+            3> 8 4
+                4> 4 4
+                    5> [c17 c18]
+                    5> [c19 c20]
+                4> 4 4
+                    5> [c21 c22]
+                    5> [c23 c24]
+            3> 4 4
+                4> 4 4
+                    5> [c25 c26]
+                    5> [c27 c28]
+                4> 4 4
+                    5> [c29 c30]
+                    5> [c31 c32]
+
+    1> 16 8
+        2> [r]
+        2> [z]
+
+end-ML-BASIS-SECTION
+
+
+#######################################################################
+### Integrator
+#######################################################################
+
+INTEGRATOR-SECTION
+
+VMF
+RK8 = 1.0d-8, 1.0d-5
+
+end-INTEGRATOR-SECTION
+
+
+#######################################################################
+### Initial state
+###
+### Electronic:
+###   neutral molecule: d empty
+###   T=0 finite Fermi sea in the metal
+###
+### Nuclear:
+###   r = nu=16 eigenstate of asymptotic neutral NO
+###   z = incoming Gaussian scattering packet
+#######################################################################
+
+INIT_WF-SECTION
+
+build
+
+d      euclid    1
+c1     euclid    2
+c2     euclid    2
+c3     euclid    2
+c4     euclid    2
+c5     euclid    2
+c6     euclid    2
+c7     euclid    2
+c8     euclid    2
+c9     euclid    2
+c10    euclid    2
+c11    euclid    2
+c12    euclid    2
+c13    euclid    2
+c14    euclid    2
+c15    euclid    2
+c16    euclid    2
+c17    euclid    1
+c18    euclid    1
+c19    euclid    1
+c20    euclid    1
+c21    euclid    1
+c22    euclid    1
+c23    euclid    1
+c24    euclid    1
+c25    euclid    1
+c26    euclid    1
+c27    euclid    1
+c28    euclid    1
+c29    euclid    1
+c30    euclid    1
+c31    euclid    1
+c32    euclid    1
+
+r      eigenf    rinit    pop=17
+
+z      gauss     9.44863062312885    -63.3965731911397    0.315474464837402
+
+end-build
+
+end-INIT_WF-SECTION
+
+
+END-INPUT

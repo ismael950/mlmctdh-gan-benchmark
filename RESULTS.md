@@ -17,8 +17,23 @@ Full raw/checkpoint preserved only for run_010. Intermediate runs retain analysi
 ## benchmark3_no_au_scattering
 Primary large ML-MCTDH scaling benchmark: NO/Au(111).
 Current rank-convergence study uses 50 fs scouting propagations.
-run_006 currently in progress.
-Friday preserves the verified run_005 checkpoint: checkpoints/noau_run005_50fs_raw.tar.gz
+
+run_005 completed and its full checkpoint was preserved.
+run_006 completed and its full 50 fs checkpoint was preserved and verified locally.
+
+Maximum molecular-population change:
+- run_004 -> run_005: 7.604649e-04
+- run_005 -> run_006: 8.396022e-04
+
+The adaptive refinement target after run_006 was:
+layer 2, node 19, mode 1, rank 8 -> 12.
+
+run_007 is currently running on Friday.
+
+Generated numerical results are stored under results/ and are not versioned.
+Full Heidelberg checkpoints are stored under checkpoints/ and are not versioned.
+For refined Heidelberg runs, benchmark.inp is versioned while reused
+benchmark.op and supporting .dat files remain excluded from Git.
 
 ## archive
 Legacy validation and smoke-test analyses not intended as primary report results.
