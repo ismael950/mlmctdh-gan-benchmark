@@ -12,6 +12,48 @@ N_QUBITS = (
 )
 NUCLEAR_WIRES = (6, 7, 8)
 
+def _layout_from_nuclear_dimension(
+    nuclear_dimension: int,
+) -> tuple[int, int, tuple[int, ...]]:
+    nuclear_dimension = int(nuclear_dimension)
+
+    if (
+        nuclear_dimension <= 0
+        or nuclear_dimension
+        & (nuclear_dimension - 1)
+    ):
+        raise ValueError(
+            "nuclear_dimension must be a positive power of two"
+        )
+
+    n_nuclear_qubits = (
+        nuclear_dimension.bit_length() - 1
+    )
+
+    n_qubits = (
+        N_ELECTRONIC_QUBITS
+        + n_nuclear_qubits
+    )
+
+    nuclear_wires = tuple(
+        range(
+            N_ELECTRONIC_QUBITS,
+            n_qubits,
+        )
+    )
+
+    return (
+        n_nuclear_qubits,
+        n_qubits,
+        nuclear_wires,
+    )
+
+
+def _layout_from_model(model):
+    return _layout_from_nuclear_dimension(
+        model.nuclear_dimension
+    )
+
 def apply_f0_circuit(
     model,
     dt: float,
@@ -32,6 +74,10 @@ def apply_f0_circuit(
     represented exactly by diagonal lookup unitaries.
     """
 
+    _, _, nuclear_wires = (
+        _layout_from_model(model)
+    )
+
     points = np.asarray(
         model.nuclear_grid.points,
         dtype=float,
@@ -50,7 +96,7 @@ def apply_f0_circuit(
 
     qml.DiagonalQubitUnitary(
         base_phases,
-        wires=NUCLEAR_WIRES,
+        wires=nuclear_wires,
     )
 
     # -------------------------------------------------
@@ -88,12 +134,12 @@ def apply_f0_circuit(
 
         # Apply the Q-dependent phase only when
         # electronic orbital i is occupied.
-        qml.ControlledQubitUnitary(
-            nuclear_unitary,
-            wires=[
-                orbital,
-                *NUCLEAR_WIRES,
-            ],
+        qml.ctrl(
+            qml.QubitUnitary(
+                nuclear_unitary,
+                wires=nuclear_wires,
+            ),
+            control=[orbital],
         )
 
 
@@ -378,8 +424,16 @@ def apply_diagonal_hopping_phase(
             dtype=float,
         )
 
+        nuclear_dimension = profile.size
+
+        _, _, nuclear_wires = (
+            _layout_from_nuclear_dimension(
+                nuclear_dimension
+            )
+        )
+
         if profile.shape != (
-            2**N_NUCLEAR_QUBITS,
+            nuclear_dimension,
         ):
             raise ValueError(
                 f"Invalid hopping profile shape "
@@ -390,7 +444,16 @@ def apply_diagonal_hopping_phase(
             (
                 2,
                 2,
-                2**N_NUCLEAR_QUBITS,
+                nuclear_dimension,
+            ),
+            dtype=complex,
+        )
+
+        phases = np.empty(
+            (
+                2,
+                2,
+                nuclear_dimension,
             ),
             dtype=complex,
         )
@@ -422,7 +485,7 @@ def apply_diagonal_hopping_phase(
             wires=[
                 i,
                 j,
-                *NUCLEAR_WIRES,
+                *nuclear_wires,
             ],
         )
 
@@ -596,6 +659,10 @@ def apply_final_fragment_circuit(
     # Metal orbital energies
     # -------------------------------------------------
 
+    _, _, nuclear_wires = (
+        _layout_from_model(model)
+    )
+
     for orbital, energy in (
         model.metal_energies.items()
     ):
@@ -611,7 +678,7 @@ def apply_final_fragment_circuit(
     # -------------------------------------------------
 
     qml.QFT(
-        wires=NUCLEAR_WIRES,
+        wires=nuclear_wires,
     )
 
     # Kinetic energies in the momentum basis.
@@ -631,12 +698,12 @@ def apply_final_fragment_circuit(
 
     qml.DiagonalQubitUnitary(
         kinetic_phases,
-        wires=NUCLEAR_WIRES,
+        wires=nuclear_wires,
     )
 
     # Momentum -> position
     qml.adjoint(qml.QFT)(
-        wires=NUCLEAR_WIRES,
+        wires=nuclear_wires,
     )
 
 
@@ -778,23 +845,33 @@ def gan_trotter_final_state(
         dtype=complex,
     )
 
-    if initial_state.shape != (2**N_QUBITS,):
+    _, n_qubits, _ = (
+        _layout_from_model(model)
+    )
+
+    expected_dimension = 2**n_qubits
+
+    if initial_state.shape != (
+        expected_dimension,
+    ):
         raise ValueError(
-            "initial_state must have dimension 512"
+            "initial_state has dimension "
+            f"{initial_state.size}, expected "
+            f"{expected_dimension}"
         )
 
     dt = total_time / n_steps
 
     device = qml.device(
         "default.qubit",
-        wires=N_QUBITS,
+        wires=n_qubits,
     )
 
     @qml.qnode(device)
     def circuit():
         qml.StatePrep(
             initial_state,
-            wires=range(N_QUBITS),
+            wires=range(n_qubits),
         )
 
         for _ in range(n_steps):

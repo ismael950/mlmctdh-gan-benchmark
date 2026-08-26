@@ -87,3 +87,5 @@ backend_inputs/benchmark3_no_au_scattering/heidelberg/run_*/benchmark.op
 backend_inputs/benchmark3_no_au_scattering/heidelberg/run_*/*.dat
 checkpoints/
 fort.*
+.venv-estimator/
+figures/
