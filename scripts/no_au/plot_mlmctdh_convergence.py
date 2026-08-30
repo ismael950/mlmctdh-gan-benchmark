@@ -88,7 +88,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = Path(__file__).resolve().parents[2]
 
     data = collect_runs(project_root, args.benchmark)
 

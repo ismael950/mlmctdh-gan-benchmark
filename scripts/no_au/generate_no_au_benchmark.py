@@ -902,7 +902,7 @@ config_data = {
 PROJECT_ROOT = (
     Path(__file__)
     .resolve()
-    .parents[1]
+    .parents[2]
 )
 
 OUTPUT_PATH = (

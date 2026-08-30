@@ -49,7 +49,12 @@ src/ganbench/
 
 configs/         Configuraciones YAML de cada benchmark.
 backend_inputs/  Entradas de ML-MCTDH (Heidelberg) versionadas: benchmark.inp por run.
-scripts/         Generadores, corredores, validadores y graficadores (ver abajo).
+scripts/
+  run_benchmark.py     Corredor general (exacto + Heidelberg adaptativo).
+  small_benchmark/      Pipeline del small_direct_benchmark.
+  no_au/               Pipeline del benchmark3 NO/Au(111).
+  diagnostics/         Inspecciones y chequeos puntuales (no producen resultados reportables).
+  tests/              Tests de validación (pass/fail).
 
 results/         (IGNORADO por git) Resultados numéricos generados.
 checkpoints/     (IGNORADO) Checkpoints completos de Heidelberg.
@@ -59,44 +64,58 @@ generated/       (IGNORADO) Entradas de Heidelberg generadas al vuelo.
 
 ## Scripts (`scripts/`)
 
-**small_direct_benchmark**
+Los scripts se corren **desde la raíz del repo** (`python scripts/<subcarpeta>/<script>.py`).
+
+### `scripts/small_benchmark/`
 
 | Script | Función |
 |---|---|
 | `generate_small_exact_reference.py` | Referencia exacta (state vector, malla K=32). Verdad de fondo. |
 | `check_small_nuclear_basis_convergence.py` | Convergencia de la malla nuclear (K = 8/16/32/64). |
-| `check_small_nuclear_boundaries.py` | Chequeo de fronteras de la malla nuclear. |
 | `generate_small_trotter_sweep.py` | Trotteriza numéricamente el algoritmo GAN; barrido en dt; `E_trot(dt)` vs exacto. |
-| `validate_small_effective_hamiltonian.py` | Estimador BCH (PennyLane `labs.trotter_error`, orden 2): construye `H_eff = (i/dt)·Ω`, lo propaga **exacto**, y reporta `E_eff` (predicción de `E_trot`) y `E_model` (residual `H_eff` vs Trotter, ~dt²). |
-| `validate_quantum_trotter_k32.py` | Validación del circuito Trotter GAN (PennyLane) contra la trotterización numérica en K=32. |
+| `validate_small_effective_hamiltonian.py` | Estimador BCH (PennyLane `labs.trotter_error`, orden 2): construye `H_eff = (i/dt)·Ω`, lo propaga **exacto**, y reporta `E_eff` (predicción de `E_trot`) y `E_model` (residual `H_eff` vs Trotter, ~dt²). Correr con `.venv-estimator`. |
 | `build_small_direct_comparison.py` | Ensambla la comparación de 3 vías (exacto / ML-MCTDH / Trotter). |
 | `plot_small_direct_benchmark.py` | Figuras de la comparación de 3 vías. |
-| `plot_mlmctdh_convergence.py` | Figura de convergencia de ML-MCTDH (coeficientes vs error). |
 | `plot_trotter_error_estimator.py` | Figura del escalamiento del estimador (`E_trot`, `E_eff`, residual vs dt). |
 | `plot_trotter_estimator_dynamics.py` | Dinámica del error para un dt fijo (2.5 a.u.). |
 
-**benchmark3_no_au_scattering**
+### `scripts/no_au/`
 
 | Script | Función |
 |---|---|
 | `generate_no_au_benchmark.py` | Genera el benchmark físico NO/Au. |
 | `generate_no_au_heidelberg_operator.py` | Escribe el operador de Heidelberg (`benchmark.op`). |
 | `generate_no_au_heidelberg_input.py` | Escribe la entrada de Heidelberg (`benchmark.inp`). |
-| `inspect_no_au_benchmark.py`, `inspect_noau_convergence.py`, `inspect_no_au_bch_structure.py` | Inspección del benchmark, de la convergencia de rango y de la estructura de la expansión BCH. |
+| `inspect_noau_convergence.py` | Seguimiento de la convergencia de rango de las corridas de Heidelberg. |
+| `inspect_no_au_bch_structure.py` | Estructura de la expansión BCH del operador NO/Au. |
+| `plot_mlmctdh_convergence.py` | Figura de convergencia de ML-MCTDH (coeficientes vs error); genérica. |
 
-**General**
+### `scripts/diagnostics/`
 
 | Script | Función |
 |---|---|
-| `run_benchmark.py` | Corredor: backend exacto y backend Heidelberg (con refinamiento adaptativo de rangos SPF). |
+| `inspect_no_au_benchmark.py` | Inspección física del modelo NO/Au (superficies diabáticas, baño metálico, paquete de onda). |
+| `check_small_nuclear_boundaries.py` | Chequeo puntual: la función de onda no toca el borde de la malla periódica. |
+
+### `scripts/tests/`
+
+| Script | Función |
+|---|---|
+| `test_quantum_trotter_k32.py` | Comprueba que el Trotter GAN a nivel operador coincide con el circuito PennyLane en K=32. |
+
+### `scripts/run_benchmark.py`
+
+Corredor general: backend exacto y backend Heidelberg (con refinamiento adaptativo de rangos SPF).
 
 ## Entornos
 
 - **Principal**: `numpy`, `scipy`, `pandas`, `matplotlib`, `pennylane`, `qiskit`.
-- **`.venv-estimator/`** (ignorado): entorno separado con la versión de PennyLane
-  que expone `pennylane.labs.trotter_error` (`te.effective_hamiltonian`,
-  `te.ProductFormula`, `te.generic_fragments`). Necesario para
-  `validate_small_effective_hamiltonian.py` e `inspect_no_au_bch_structure.py`.
+- **`.venv-estimator/`** (ignorado): entorno separado con PennyLane 0.45, que
+  expone la API GenericFragment de `pennylane.labs.trotter_error`
+  (`te.effective_hamiltonian`, `te.ProductFormula`, `te.generic_fragments`).
+  Necesario para `small_benchmark/validate_small_effective_hamiltonian.py` y
+  `no_au/inspect_no_au_bch_structure.py`. Instálalo con
+  `.venv-estimator/Scripts/python -m pip install -e .`.
 - **ML-MCTDH**: binario externo de Heidelberg
   (`mctdh86`, ruta local en `run_benchmark.py`). Corre en Linux, típicamente en
   un servidor/cluster. Este repo sólo genera/parsea sus entradas y salidas.
@@ -104,23 +123,27 @@ generated/       (IGNORADO) Entradas de Heidelberg generadas al vuelo.
 ## Flujo de trabajo (small_direct_benchmark)
 
 ```bash
+# Correr siempre desde la raíz del repo.
+
 # 1. Referencia exacta y convergencia de malla
-python scripts/generate_small_exact_reference.py
-python scripts/check_small_nuclear_basis_convergence.py
+python scripts/small_benchmark/generate_small_exact_reference.py
+python scripts/small_benchmark/check_small_nuclear_basis_convergence.py
 
 # 2. Barrido de Trotter numérico -> E_trot(dt)
-python scripts/generate_small_trotter_sweep.py
+python scripts/small_benchmark/generate_small_trotter_sweep.py
 
 # 3. Estimador BCH del error de Trotter (propagación exacta de H_eff)
-python scripts/validate_small_effective_hamiltonian.py   # usa .venv-estimator
+.venv-estimator/Scripts/python scripts/small_benchmark/validate_small_effective_hamiltonian.py
 
 # 4. Convergencia de ML-MCTDH: generar entradas, correr en el host de MCTDH,
 #    y analizar. Las entradas versionadas están en
 #    backend_inputs/small_direct_benchmark/heidelberg/run_XXX/benchmark.inp
 
 # 5. Ensamblar comparación y figuras
-python scripts/build_small_direct_comparison.py
-python scripts/plot_small_direct_benchmark.py
+python scripts/small_benchmark/build_small_direct_comparison.py
+python scripts/small_benchmark/plot_small_direct_benchmark.py
+python scripts/small_benchmark/plot_trotter_error_estimator.py
+python scripts/small_benchmark/plot_trotter_estimator_dynamics.py
 ```
 
 ## Ramas

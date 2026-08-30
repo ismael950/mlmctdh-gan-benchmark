@@ -23,7 +23,7 @@ BENCHMARK = "benchmark3_no_au_scattering"
 PROJECT_ROOT = (
     Path(__file__)
     .resolve()
-    .parents[1]
+    .parents[2]
 )
 
 CONFIG_PATH = (

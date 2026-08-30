@@ -19,7 +19,7 @@ from ganbench.quantum.space import lift_electronic
 from ganbench.quantum.toy_model import build_quantum_toy_gan
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 BASE = (
     ROOT

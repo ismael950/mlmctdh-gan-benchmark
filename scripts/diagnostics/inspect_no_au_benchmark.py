@@ -26,7 +26,7 @@ AMU_TO_ELECTRON_MASS = 1822.888486209
 PROJECT_ROOT = (
     Path(__file__)
     .resolve()
-    .parents[1]
+    .parents[2]
 )
 
 CONFIG_PATH = (
