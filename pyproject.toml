@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ganbench"
+version = "0.0.0"
+description = "Benchmark of the GAN first-order Trotter algorithm vs ML-MCTDH, plus BCH Trotter-error estimation"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# ganbench.quantum.pennylane_backend and the effective-Hamiltonian estimator
+# need PennyLane's labs.trotter_error module (GenericFragment path, >= 0.45).
+estimator = ["pennylane>=0.45"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,18 @@
+# Main environment for ganbench.
+#
+#   python -m pip install -e .
+#
+# installs the package plus the runtime dependencies below.
+
+numpy
+scipy
+pandas
+matplotlib
+pyyaml
+
+# Optional: only needed by ganbench.quantum.pennylane_backend and by
+# scripts/small_benchmark/validate_small_effective_hamiltonian.py.
+# That script is normally run from the separate .venv-estimator environment,
+# which pins PennyLane 0.45 for the labs.trotter_error GenericFragment API.
+#
+#   pennylane>=0.45
