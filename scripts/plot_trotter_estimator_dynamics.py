@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 RESULTS = ROOT / "results" / "small_direct_benchmark"
 
-OUT = RESULTS / "trotter_error_estimator"
+OUT = ROOT / "figures" / "small_direct_benchmark"
 OUT.mkdir(parents=True, exist_ok=True)
 
 

@@ -319,41 +319,22 @@ def main():
     # Compact benchmark summary
     # ============================================================
 
-    run008_summary = json.load(
-        open(
-            BASE
-            / "mlmctdh"
-            / "run_008"
-            / "summary.json",
-            encoding="utf-8",
-        )
-    )
-
-    quantum_metadata = json.load(
-        open(
-            BASE
-            / "quantum"
-            / "metadata.json",
-            encoding="utf-8",
-        )
-    )
-
+    # Report the runs that were actually used above (selected
+    # automatically) rather than hard-coded names.
     metrics = {
-        "mlmctdh_run": "run_008",
+        "mlmctdh_run": best_ml_dir.name,
         "mlmctdh_n_coefficients":
-            run008_summary[
-                "n_ml_coefficients"
-            ],
+            int(
+                best_ml_summary[
+                    "n_ml_coefficients"
+                ]
+            ),
         "mlmctdh_max_error":
             float(np.max(ml_error)),
         "quantum_trotter_step_au":
-            quantum_metadata[
-                "trotter_step_au"
-            ],
+            float(best_quantum_row["dt_au"]),
         "quantum_n_trotter_steps":
-            quantum_metadata[
-                "n_trotter_steps"
-            ],
+            best_n_steps,
         "quantum_max_error":
             float(np.max(q_error)),
     }

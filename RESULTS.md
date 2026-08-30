@@ -1,14 +1,18 @@
 # Results inventory
 
+Currently reported: `small_direct_benchmark` (exact + estimator) and
+`benchmark3_no_au_scattering` (in progress on the cluster). `benchmark1` and
+`benchmark2` are kept for reference but are not part of the current writeup.
+
 ## benchmark1_newns_anderson
-Historical ML-MCTDH convergence benchmark.
+Historical ML-MCTDH convergence benchmark. Not currently reported.
 Convergence data: results/benchmark1_newns_anderson/heidelberg/convergence/mlmctdh_convergence.csv
 Best preserved run: run_015
 Maximum molecular-population error: 1.5227385725347098e-05
 Full raw/checkpoint preserved only for run_015. Intermediate runs retain analysis and reproducible inputs.
 
 ## benchmark2_two_molecular
-Historical two-molecular-orbital ML-MCTDH benchmark.
+Historical two-molecular-orbital ML-MCTDH benchmark. Not currently reported.
 Convergence data: results/benchmark2_two_molecular/heidelberg/convergence/mlmctdh_convergence.csv
 Best preserved run: run_010
 Maximum molecular-population error: 3.729729694867956e-06
@@ -48,6 +52,8 @@ effective-Hamiltonian estimator of the Trotter error.
 Primary error metric: E_X = max_t max_i |n_i^X(t) - n_i^exact(t)|, over the two
 molecular populations. Model: 2 molecular + 4 metal orbitals, 1 nuclear mode,
 K=32 FFT grid, t_final = 2000 a.u., 201 output times.
+Directory layout and which script produces each file:
+docs/small_direct_benchmark_layout.md
 
 ### Nuclear-basis convergence
 K = 8 / 16 / 32 / 64 checked. K=32 adopted as canonical (matches the exact and

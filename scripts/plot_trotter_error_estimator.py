@@ -7,68 +7,41 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 
-OUT = (
+# Canonical source: the exact H_eff propagation sweep.
+SOURCE = (
     ROOT
     / "results"
     / "small_direct_benchmark"
-    / "trotter_error_estimator"
+    / "effective_hamiltonian"
+    / "convergence.csv"
+)
+
+OUT = (
+    ROOT
+    / "figures"
+    / "small_direct_benchmark"
 )
 
 OUT.mkdir(parents=True, exist_ok=True)
 
+if not SOURCE.exists():
+    raise FileNotFoundError(
+        f"{SOURCE} not found. Run "
+        "validate_small_effective_hamiltonian.py first."
+    )
+
+convergence = pd.read_csv(SOURCE)
 
 data = pd.DataFrame(
     {
-        "N": [
-            200, 400, 600, 800,
-            1000, 1200, 1400, 1600,
-        ],
-        "dt_au": [
-            10.0,
-            5.0,
-            3.3333333333333335,
-            2.5,
-            2.0,
-            1.6666666666666667,
-            1.4285714285714286,
-            1.25,
-        ],
-        "E_trot": [
-            2.4607573114399095e-05,
-            1.2035559268763762e-05,
-            7.964140252725294e-06,
-            5.9507734126995615e-06,
-            4.749900550327091e-06,
-            3.952296370735020e-06,
-            3.384036751707953e-06,
-            2.958639899741655e-06,
-        ],
-        "E_eff": [
-            7.583936055255425e-05,
-            2.4857391111243743e-05,
-            1.3664743234942378e-05,
-            9.157923910207977e-06,
-            6.802692064988847e-06,
-            5.377945672124795e-06,
-            4.431505625235310e-06,
-            3.760638697336560e-06,
-        ],
-        "E_residual": [
-            5.123178743815515e-05,
-            1.282183184247998e-05,
-            5.7006029822170845e-06,
-            3.2071504975084153e-06,
-            2.052791514661756e-06,
-            1.4256493013897753e-06,
-            1.0474688735273574e-06,
-            8.01998797594905e-07,
-        ],
+        "N": convergence["n_trotter_steps"],
+        "dt_au": convergence["dt_au"],
+        "E_trot": convergence["E_trot"],
+        "E_eff": convergence["E_eff"],
+        # Residual between the H_eff channel and the true
+        # Trotter channel (E_model in the source table).
+        "E_residual": convergence["E_model"],
     }
-)
-
-data.to_csv(
-    OUT / "trotter_error_estimator.csv",
-    index=False,
 )
 
 
@@ -159,9 +132,6 @@ plt.close(fig)
 print("Saved:")
 print(
     OUT / "trotter_error_estimator_scaling.png"
-)
-print(
-    OUT / "trotter_error_estimator.csv"
 )
 
 print()
