@@ -73,7 +73,7 @@ def main() -> None:
         BASE / "trotter_sweep" / "convergence.csv"
     ).set_index("n_trotter_steps")
 
-    def analyse_run(name: str):
+    def read_run(name: str):
         exp_path = RAW / name / "raw" / "expectation"
         if not exp_path.exists():
             print(f"  {name}: missing {exp_path}")
@@ -84,37 +84,51 @@ def main() -> None:
         obs.to_csv(run_out / "observables.csv", index=False)
         if not np.allclose(obs["time"].to_numpy(), times):
             raise RuntimeError(f"{name}: time grid differs from exact reference")
-        e0 = np.abs(obs["d1"].to_numpy() - ex0)
-        e1 = np.abs(obs["d2"].to_numpy() - ex1)
-        combined = np.maximum(e0, e1)
-        k = int(np.argmax(combined))
-        summary = {
-            "run_id": name,
-            "max_molecular_orbital_population_error": float(combined[k]),
-            "molecular_orbital_of_max_error": int(0 if e0[k] >= e1[k] else 1),
-            "time_of_max_error_au": float(times[k]),
-            "max_norm_error": float(np.abs(obs["norm"].to_numpy() - 1.0).max()),
-            "max_particle_number_error": float(
-                np.abs(obs["N_total"].to_numpy() - 3.0).max()
-            ),
-        }
-        (run_out / "summary.json").write_text(json.dumps(summary, indent=2))
-        return summary["max_molecular_orbital_population_error"]
+        return obs
 
-    print("H_ref:", analyse_run("H_ref"))
+    def molec_max_diff(a0, a1, b0, b1):
+        return float(np.maximum(np.abs(a0 - b0), np.abs(a1 - b1)).max())
+
+    href = read_run("H_ref")
+    h0, h1 = href["d1"].to_numpy(), href["d2"].to_numpy()
+    # standalone ML-MCTDH error: H propagated on this tree vs exact
+    delta_mlmctdh = molec_max_diff(h0, h1, ex0, ex1)
+    (OUT / "H_ref" / "summary.json").write_text(json.dumps({
+        "run_id": "H_ref",
+        "max_molecular_orbital_population_error": delta_mlmctdh,
+        "max_norm_error": float(np.abs(href["norm"].to_numpy() - 1.0).max()),
+        "max_particle_number_error": float(np.abs(href["N_total"].to_numpy() - 3.0).max()),
+    }, indent=2))
+    print(f"H_ref (standalone ML-MCTDH error): {delta_mlmctdh:.3e}")
 
     rows = []
     for idx, n_steps in enumerate(N_STEPS_LIST, start=1):
         dt = T_FINAL / n_steps
-        e_ml = analyse_run(f"run_{idx:03d}")
+        obs = read_run(f"run_{idx:03d}")
+        if obs is None:
+            continue
+        e0, e1 = obs["d1"].to_numpy(), obs["d2"].to_numpy()
+        # (a) H_eff-ML-MCTDH vs exact  -> contaminated by the ML-MCTDH floor
+        e_vs_exact = molec_max_diff(e0, e1, ex0, ex1)
+        # (b) same-tree difference: H_eff-ML-MCTDH minus H-ML-MCTDH
+        #     the ML-MCTDH representation error cancels (common mode)
+        e_diff = molec_max_diff(e0, e1, h0, h1)
+        (OUT / f"run_{idx:03d}" / "summary.json").write_text(json.dumps({
+            "run_id": f"run_{idx:03d}", "dt_au": dt,
+            "E_eff_mlmctdh_vs_exact": e_vs_exact,
+            "E_eff_mlmctdh_diff": e_diff,
+            "max_norm_error": float(np.abs(obs["norm"].to_numpy() - 1.0).max()),
+        }, indent=2))
         rows.append(
             {
                 "run": f"run_{idx:03d}",
                 "n_trotter_steps": n_steps,
                 "dt_au": dt,
-                "E_eff_mlmctdh": e_ml,
+                "E_eff_mlmctdh": e_vs_exact,
+                "E_eff_mlmctdh_diff": e_diff,
                 "E_eff_exact": float(heff_conv.loc[n_steps, "E_eff"]),
                 "E_trot": float(trot_conv.loc[n_steps, "max_error"]),
+                "delta_mlmctdh": delta_mlmctdh,
             }
         )
     conv = pd.DataFrame(rows)
