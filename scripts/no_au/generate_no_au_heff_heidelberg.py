@@ -43,7 +43,8 @@ TREE_INPUT = ROOT / "results" / "benchmark3_no_au_scattering" / "heidelberg" / "
 BASE_INPUTS = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg" / "run_008"
 OUT = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg_heff"
 
-DT_SWEEP = [10.0, 6.0, 4.0, 3.0]          # a.u.  -> r = 207, 344, 517, 689 over 50 fs
+DT_SWEEP = [3.0, 2.0, 1.5, 1.0]           # a.u.  -> r = 689, 1034, 1378, 2067 over 50 fs
+INCLUDE_METAL_METAL = False                # drop the 496-term [H_j,H_k] family (see e1_terms)
 RECON_TOL = 1.0e-9
 
 EV_TO_HARTREE = 1.0 / 27.211386245988
@@ -273,14 +274,17 @@ def _real_hop(coeff: complex, i: int, j: int, n_orb: int, r_op="1", z_op="1"):
     return [E1Term(pref, t1, r_op, z_op), E1Term(pref, t2, r_op, z_op)]
 
 
-def e1_terms(n_metal: int, eps, vk, dt: float, include_kinetic: bool = False) -> list[E1Term]:
+def e1_terms(n_metal: int, eps, vk, dt: float, include_kinetic: bool = False,
+             include_metal_metal: bool = True) -> list[E1Term]:
     """dt * E1 = dt * (+i/2) [ sum_k [F0,H_k] + [F0,Flast]
                                + sum_{j<k}[H_j,H_k] + sum_k [H_k,Flast] ] .
 
     include_kinetic=False drops the two commutator-with-KE families:
       [H_k,Flast]_T  ~ 1e-5 (negligible),
       [F0,Flast]     ~ 1e-3 (small; needs |mode V |mode KE product syntax).
-    Both stay off the proven one-function-per-mode `.op` dialect.
+    include_metal_metal=False drops [H_j,H_k] (the 496-term family): per term
+      ~ vk_j vk_k ~ 1e-3 (smallest), but numerous.  Dropping it is a
+      DOWNWARD bias on r* -- size reported by verify_reduced().
     """
     n_orb = 1 + n_metal
     pre = 0.5j * dt
@@ -296,9 +300,10 @@ def e1_terms(n_metal: int, eps, vk, dt: float, include_kinetic: bool = False) ->
         T += _imag_hop(c * CDIFF, 0, k, n_orb, r_op="1", z_op="fz")
 
     # ---- (H_j, H_k), j<k:  W_j W_k(z) (c_j^dag c_k - c_k^dag c_j) ----
-    for j in range(1, n_metal + 1):
-        for k in range(j + 1, n_metal + 1):
-            T += _imag_hop(pre * vk[j - 1] * vk[k - 1], j, k, n_orb, r_op="1", z_op="fz2")
+    if include_metal_metal:
+        for j in range(1, n_metal + 1):
+            for k in range(j + 1, n_metal + 1):
+                T += _imag_hop(pre * vk[j - 1] * vk[k - 1], j, k, n_orb, r_op="1", z_op="fz2")
 
     # ---- (H_k, Flast)_eps:  W_k(z) eps_k (d^dag c_k - c_k^dag d) ----
     for k in range(1, n_metal + 1):
@@ -374,15 +379,18 @@ def verify_reduced() -> None:
             E_pl = h_eff - H
             E_full = reconstruct(e1_terms(n_metal, eps, vk, dt, include_kinetic=True), r, z)
             E_diag = reconstruct(e1_terms(n_metal, eps, vk, dt, include_kinetic=False), r, z)
+            E_emit = reconstruct(e1_terms(n_metal, eps, vk, dt, include_kinetic=False,
+                                          include_metal_metal=INCLUDE_METAL_METAL), r, z)
             err = float(np.abs(E_full - E_pl).max())
             trunc = float(np.abs(E_diag - E_pl).max())
+            emit_miss = float(np.abs(E_emit - E_pl).max())
             scale = float(np.abs(E_pl).max())
             flag = "OK" if err < RECON_TOL else "FAIL"
             if err >= RECON_TOL:
                 ok = False
-            print(f"  n_metal={n_metal} dt={dt:5.1f}  full|E-E_pl|={err:.1e}  "
-                  f"diag-only|E-E_pl|={trunc:.1e} ({100*trunc/scale:.2f}% of |E_pl|~{scale:.1e})  "
-                  f"Hherm={herm:.0e}  [{flag}]")
+            print(f"  n_metal={n_metal} dt={dt:4.1f}  full|E-E_pl|={err:.1e}  "
+                  f"diag-only={100*trunc/scale:.2f}%  EMITTED-miss={100*emit_miss/scale:.1f}% "
+                  f"(|E_pl|~{scale:.1e})  [{flag}]")
     # ---- .op string round-trip: emit -> parse -> dense == e1_terms dense ----
     nm = 3
     eps = np.array([-0.9, 0.1, 1.1]); vk = np.array([0.015, 0.027, 0.021])
@@ -410,8 +418,9 @@ def verify_reduced() -> None:
         if coeff is not None:
             yield coeff, ops
 
-    for dt in (3.0, 10.0):
-        want = reconstruct(e1_terms(nm, eps, vk, dt, include_kinetic=False), r, z)
+    for dt in (1.0, 3.0):
+        want = reconstruct(e1_terms(nm, eps, vk, dt, include_kinetic=False,
+                                    include_metal_metal=INCLUDE_METAL_METAL), r, z)
         got = np.zeros_like(want)
         for coeff, ops in parse_terms(emit_e1_op_lines(dt, vk, eps, nm)):
             spin = ["1"] * (1 + nm)
@@ -479,7 +488,8 @@ def emit_e1_op_lines(dt: float, vk, ec, n_metal: int) -> list[str]:
     """
     r_mode, z_mode = n_metal + 2, n_metal + 3
     lines = ["", f"### ---- dt*E1  (leading BCH error operator, dt = {dt} a.u.) ----"]
-    for t in e1_terms(n_metal, ec, vk, dt, include_kinetic=False):
+    for t in e1_terms(n_metal, ec, vk, dt, include_kinetic=False,
+                      include_metal_metal=INCLUDE_METAL_METAL):
         c = complex(t.coeff)
         if abs(c.imag) > 1e-10 * max(abs(c.real), 1.0):
             raise RuntimeError(f"unexpected complex E1 coeff {c}")
@@ -572,18 +582,21 @@ def write_full_inputs() -> None:
     sh = OUT / "run_no_au_heff_heidelberg.sh"
     sh.write_text(
         "#!/bin/bash\n"
-        "# Run the NO/Au H_eff sweep with Heidelberg MCTDH (cluster / WSL).\n"
+        "# Run the NO/Au H_eff sweep with Heidelberg MCTDH.\n"
         "#   bash backend_inputs/.../heidelberg_heff/run_no_au_heff_heidelberg.sh\n"
+        "# Override RUNS to do a subset, e.g.  RUNS='H_ref run_001' bash ...\n"
         "set -e\n"
-        ': "${MCTDH_DIR:=$HOME/software/MCTDH/mctdh86.10}"\n'
+        ': "${MCTDH_DIR:=/data/$USER/software/mctdh86.10}"\n'
+        ': "${MCTDH_BIN:=$MCTDH_DIR/bin/binary/x86_64/mctdh86}"\n'
+        ': "${RUNS:=H_ref run_001 run_002 run_003 run_004}"\n'
         'source "$MCTDH_DIR/install/mctdh.profile"\n'
         'HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
         'RES="$HERE/../../../results/benchmark3_no_au_scattering/heidelberg_heff"\n'
-        "for run in H_ref run_001 run_002 run_003 run_004; do\n"
+        'for run in $RUNS; do\n'
         '    d="$HERE/$run"; [ -d "$d" ] || continue\n'
-        '    echo "=============== $run ==============="\n'
+        '    echo "=============== $run  ($(date)) ==============="\n'
         '    mkdir -p "$RES/$run"\n'
-        '    cd "$d" && mctdh86 -mnd -w benchmark.inp\n'
+        '    cd "$d" && "$MCTDH_BIN" -mnd -w benchmark.inp\n'
         "done\n"
         'echo "done -> python scripts/no_au/analyze_no_au_heff.py"\n',
         encoding="utf-8",

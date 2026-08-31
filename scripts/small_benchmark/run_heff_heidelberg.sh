@@ -19,7 +19,7 @@ BASE="$REPO/backend_inputs/small_direct_benchmark/heidelberg_heff"
 
 RESULTS="$REPO/results/small_direct_benchmark/heidelberg_heff"
 
-for run in H_ref run_001 run_002 run_003 run_004 run_005 run_006 run_007 run_008; do
+for run in H_ref; do
     d="$BASE/$run"
     [ -d "$d" ] || { echo "skip $run (missing)"; continue; }
     echo "=================== $run ==================="
