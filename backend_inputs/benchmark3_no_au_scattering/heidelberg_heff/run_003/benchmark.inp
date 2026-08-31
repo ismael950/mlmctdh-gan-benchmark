@@ -1,0 +1,629 @@
+# /data/uqigonz2/projects/mlmctdh-gan-benchmark/backend_inputs/benchmark3_no_au_scattering/heidelberg/run_009/benchmark.inp
+                ### ------- INPUT FILE ------- ###
+
+RUN-SECTION
+name = ../../../../results/benchmark3_no_au_scattering/heidelberg_heff/run_003/raw
+propagate
+time-not-fs
+energy-not-eV
+tout   = 41.3413733351821
+tpsi   = 2067.06866675911
+tfinal = 2067.06866675911
+steps
+psi = double
+expect = real-only, nd, nc1, nc2, nc3, nc4, nc5, nc6, nc7, nc8, nc9, nc10, nc11, nc12, nc13, nc14, nc15, nc16, nc17, nc18, nc19, nc20, nc21, nc22, nc23, nc24, nc25, nc26, nc27, nc28, nc29, nc30, nc31, nc32, rmean, zmean
+end-run-section
+OPERATOR-SECTION
+opname = benchmark
+oppath = .
+end-operator-section
+PBASIS-SECTION
+d      sin      2     -0.5     0.5     spin
+c1     sin      2     -0.5     0.5     spin
+c2     sin      2     -0.5     0.5     spin
+c3     sin      2     -0.5     0.5     spin
+c4     sin      2     -0.5     0.5     spin
+c5     sin      2     -0.5     0.5     spin
+c6     sin      2     -0.5     0.5     spin
+c7     sin      2     -0.5     0.5     spin
+c8     sin      2     -0.5     0.5     spin
+c9     sin      2     -0.5     0.5     spin
+c10    sin      2     -0.5     0.5     spin
+c11    sin      2     -0.5     0.5     spin
+c12    sin      2     -0.5     0.5     spin
+c13    sin      2     -0.5     0.5     spin
+c14    sin      2     -0.5     0.5     spin
+c15    sin      2     -0.5     0.5     spin
+c16    sin      2     -0.5     0.5     spin
+c17    sin      2     -0.5     0.5     spin
+c18    sin      2     -0.5     0.5     spin
+c19    sin      2     -0.5     0.5     spin
+c20    sin      2     -0.5     0.5     spin
+c21    sin      2     -0.5     0.5     spin
+c22    sin      2     -0.5     0.5     spin
+c23    sin      2     -0.5     0.5     spin
+c24    sin      2     -0.5     0.5     spin
+c25    sin      2     -0.5     0.5     spin
+c26    sin      2     -0.5     0.5     spin
+c27    sin      2     -0.5     0.5     spin
+c28    sin      2     -0.5     0.5     spin
+c29    sin      2     -0.5     0.5     spin
+c30    sin      2     -0.5     0.5     spin
+c31    sin      2     -0.5     0.5     spin
+c32    sin      2     -0.5     0.5     spin
+r      sin      128   1.322808287238 5.669178373877 short
+z      sin      340   1.001554846052 13.039110259918 short
+end-PBASIS-SECTION
+ML-BASIS-SECTION
+0> 16 16
+    1> 2 16 12
+        2> [d]
+        2> 4 12
+            3> 4 4
+                4> 4 4
+                    5> [c1 c2]
+                    5> [c3 c4]
+                4> 4 4
+                    5> [c5 c6]
+                    5> [c7 c8]
+            3> 8 8
+                4> 4 4
+                    5> [c9 c10]
+                    5> [c11 c12]
+                4> 4 4
+                    5> [c13 c14]
+                    5> [c15 c16]
+        2> 12 4
+            3> 8 4
+                4> 4 4
+                    5> [c17 c18]
+                    5> [c19 c20]
+                4> 4 4
+                    5> [c21 c22]
+                    5> [c23 c24]
+            3> 4 4
+                4> 4 4
+                    5> [c25 c26]
+                    5> [c27 c28]
+                4> 4 4
+                    5> [c29 c30]
+                    5> [c31 c32]
+    1> 16 8
+        2> [r]
+        2> [z]
+end-ML-BASIS-SECTION
+INTEGRATOR-SECTION
+VMF
+RK8 = 1.0d-8, 1.0d-5
+end-INTEGRATOR-SECTION
+INIT_WF-SECTION
+build
+d      euclid    1
+c1     euclid    2
+c2     euclid    2
+c3     euclid    2
+c4     euclid    2
+c5     euclid    2
+c6     euclid    2
+c7     euclid    2
+c8     euclid    2
+c9     euclid    2
+c10    euclid    2
+c11    euclid    2
+c12    euclid    2
+c13    euclid    2
+c14    euclid    2
+c15    euclid    2
+c16    euclid    2
+c17    euclid    1
+c18    euclid    1
+c19    euclid    1
+c20    euclid    1
+c21    euclid    1
+c22    euclid    1
+c23    euclid    1
+c24    euclid    1
+c25    euclid    1
+c26    euclid    1
+c27    euclid    1
+c28    euclid    1
+c29    euclid    1
+c30    euclid    1
+c31    euclid    1
+c32    euclid    1
+r      eigenf    rinit    pop=17
+z      gauss     9.44863062312885    -63.3965731911397    0.315474464837402
+end-build
+end-INIT_WF-SECTION
+END-INPUT
+
+ -mnd 
+
+#******************************************************************************#
+                ### ------ OPERATOR FILE ------ ###
+
+OP_DEFINE-SECTION
+title
+Physical 2D NO/Au(111) generalized Anderson-Newns Hamiltonian
+end-title
+end-OP_DEFINE-SECTION
+PARAMETER-SECTION
+mass_r = 1.3610474804445103d+04
+mass_z = 5.4682988072118162d+04
+cavg = 2.8535848669396102d-01
+cdiff = 8.7735331762158739d-02
+metalconst = 2.2204460492503131d-16
+ec1 = -1.8277283974139353d+00
+ec2 = -1.7865453504412492d+00
+ec3 = -1.7140170529376257d+00
+ec4 = -1.6127480537800760d+00
+ec5 = -1.4863963836472873d+00
+ec6 = -1.3395282074908943d+00
+ec7 = -1.1774515447262599d+00
+ec8 = -1.0060241877598979d+00
+ec9 = -8.3144192102285164d-01
+ec10 = -6.6001456405648973d-01
+ec11 = -4.9793790129185511d-01
+ec12 = -3.5106972513546225d-01
+ec13 = -2.2471805500267347d-01
+ec14 = -1.2344905584512385d-01
+ec15 = -5.0920758341500422d-02
+ec16 = -9.7377113688142513d-03
+ec17 = 9.7377113688142513d-03
+ec18 = 5.0920758341500422d-02
+ec19 = 1.2344905584512385d-01
+ec20 = 2.2471805500267347d-01
+ec21 = 3.5106972513546225d-01
+ec22 = 4.9793790129185511d-01
+ec23 = 6.6001456405648973d-01
+ec24 = 8.3144192102285164d-01
+ec25 = 1.0060241877598979d+00
+ec26 = 1.1774515447262599d+00
+ec27 = 1.3395282074908943d+00
+ec28 = 1.4863963836472873d+00
+ec29 = 1.6127480537800760d+00
+ec30 = 1.7140170529376257d+00
+ec31 = 1.7865453504412492d+00
+ec32 = 1.8277283974139353d+00
+vk1 = 1.4793795786341740d-02
+vk2 = 2.2400463411954920d-02
+vk3 = 2.7694839540428968d-02
+vk4 = 3.1694546195916919d-02
+vk5 = 3.4724420537288976d-02
+vk6 = 3.6924906393482115d-02
+vk7 = 3.8364494529424469d-02
+vk8 = 3.9077163979807018d-02
+vk9 = 3.9077163979807018d-02
+vk10 = 3.8364494529424469d-02
+vk11 = 3.6924906393482115d-02
+vk12 = 3.4724420537288976d-02
+vk13 = 3.1694546195916919d-02
+vk14 = 2.7694839540428968d-02
+vk15 = 2.2400463411954920d-02
+vk16 = 1.4793795786341740d-02
+vk17 = 1.4793795786341740d-02
+vk18 = 2.2400463411954920d-02
+vk19 = 2.7694839540428968d-02
+vk20 = 3.1694546195916919d-02
+vk21 = 3.4724420537288976d-02
+vk22 = 3.6924906393482115d-02
+vk23 = 3.8364494529424469d-02
+vk24 = 3.9077163979807018d-02
+vk25 = 3.9077163979807018d-02
+vk26 = 3.8364494529424469d-02
+vk27 = 3.6924906393482115d-02
+vk28 = 3.4724420537288976d-02
+vk29 = 3.1694546195916919d-02
+vk30 = 2.7694839540428968d-02
+vk31 = 2.2400463411954920d-02
+vk32 = 1.4793795786341740d-02
+end-PARAMETER-SECTION
+LABELS-SECTION
+VNr = external1d{neutral_r.dat}
+VAr = external1d{anionic_r.dat}
+VNz = external1d{neutral_z.dat}
+VAz = external1d{anionic_z.dat}
+fz = external1d{coupling_z.dat}
+end-LABELS-SECTION
+HAMILTONIAN-SECTION
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+1.0                    |34 KE
+1.0                    |35 KE
+0.5                    |34 VNr
+0.5                    |34 VAr
+0.5                    |35 VNz
+0.5                    |35 VAz
+cavg                   |35 1
+1.0                    |1 q |34 VAr
+-1.0                   |1 q |34 VNr
+1.0                    |1 q |35 VAz
+-1.0                   |1 q |35 VNz
+cdiff                  |1 q
+ec1                    |2 q
+ec2                    |3 q
+ec3                    |4 q
+ec4                    |5 q
+ec5                    |6 q
+ec6                    |7 q
+ec7                    |8 q
+ec8                    |9 q
+ec9                    |10 q
+ec10                   |11 q
+ec11                   |12 q
+ec12                   |13 q
+ec13                   |14 q
+ec14                   |15 q
+ec15                   |16 q
+ec16                   |17 q
+ec17                   |18 q
+ec18                   |19 q
+ec19                   |20 q
+ec20                   |21 q
+ec21                   |22 q
+ec22                   |23 q
+ec23                   |24 q
+ec24                   |25 q
+ec25                   |26 q
+ec26                   |27 q
+ec27                   |28 q
+ec28                   |29 q
+ec29                   |30 q
+ec30                   |31 q
+ec31                   |32 q
+ec32                   |33 q
+2.0*vk1                |1 dq^2 |2 dq^2 |35 fz
+2.0*vk1                |1 I*dq |2 I*dq |35 fz
+-4.0*vk2               |1 dq^2 |2 q |3 dq^2 |35 fz
+-4.0*vk2               |1 I*dq |2 q |3 I*dq |35 fz
+8.0*vk3                |1 dq^2 |2 q |3 q |4 dq^2 |35 fz
+8.0*vk3                |1 I*dq |2 q |3 q |4 I*dq |35 fz
+-16.0*vk4              |1 dq^2 |2 q |3 q |4 q |5 dq^2 |35 fz
+-16.0*vk4              |1 I*dq |2 q |3 q |4 q |5 I*dq |35 fz
+32.0*vk5               |1 dq^2 |2 q |3 q |4 q |5 q |6 dq^2 |35 fz
+32.0*vk5               |1 I*dq |2 q |3 q |4 q |5 q |6 I*dq |35 fz
+-64.0*vk6              |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 dq^2 |35 fz
+-64.0*vk6              |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 I*dq |35 fz
+128.0*vk7              |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 dq^2 |35 fz
+128.0*vk7              |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 I*dq |35 fz
+-256.0*vk8             |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 dq^2 |35 fz
+-256.0*vk8             |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 I*dq |35 fz
+512.0*vk9              |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 dq^2 |35 fz
+512.0*vk9              |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 I*dq |35 fz
+-1024.0*vk10           |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 dq^2 |35 fz
+-1024.0*vk10           |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 I*dq |35 fz
+2048.0*vk11            |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 dq^2 |35 fz
+2048.0*vk11            |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 I*dq |35 fz
+-4096.0*vk12           |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 dq^2 |35 fz
+-4096.0*vk12           |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 I*dq |35 fz
+8192.0*vk13            |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 dq^2 |35 fz
+8192.0*vk13            |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 I*dq |35 fz
+-16384.0*vk14          |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 dq^2 |35 fz
+-16384.0*vk14          |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 I*dq |35 fz
+32768.0*vk15           |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 dq^2 |35 fz
+32768.0*vk15           |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 I*dq |35 fz
+-65536.0*vk16          |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 dq^2 |35 fz
+-65536.0*vk16          |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 I*dq |35 fz
+131072.0*vk17          |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 dq^2 |35 fz
+131072.0*vk17          |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 I*dq |35 fz
+-262144.0*vk18         |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 dq^2 |35 fz
+-262144.0*vk18         |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 I*dq |35 fz
+524288.0*vk19          |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 dq^2 |35 fz
+524288.0*vk19          |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 I*dq |35 fz
+-1048576.0*vk20        |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 dq^2 |35 fz
+-1048576.0*vk20        |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 I*dq |35 fz
+2097152.0*vk21         |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 dq^2 |35 fz
+2097152.0*vk21         |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 I*dq |35 fz
+-4194304.0*vk22        |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 dq^2 |35 fz
+-4194304.0*vk22        |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 I*dq |35 fz
+8388608.0*vk23         |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 dq^2 |35 fz
+8388608.0*vk23         |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 I*dq |35 fz
+-16777216.0*vk24       |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 dq^2 |35 fz
+-16777216.0*vk24       |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 I*dq |35 fz
+33554432.0*vk25        |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 dq^2 |35 fz
+33554432.0*vk25        |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 I*dq |35 fz
+-67108864.0*vk26       |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 dq^2 |35 fz
+-67108864.0*vk26       |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 I*dq |35 fz
+134217728.0*vk27       |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 dq^2 |35 fz
+134217728.0*vk27       |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 I*dq |35 fz
+-268435456.0*vk28      |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 dq^2 |35 fz
+-268435456.0*vk28      |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 I*dq |35 fz
+536870912.0*vk29       |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 dq^2 |35 fz
+536870912.0*vk29       |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 I*dq |35 fz
+-1073741824.0*vk30     |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 dq^2 |35 fz
+-1073741824.0*vk30     |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 I*dq |35 fz
+2147483648.0*vk31      |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 q |32 dq^2 |35 fz
+2147483648.0*vk31      |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 q |32 I*dq |35 fz
+-4294967296.0*vk32     |1 dq^2 |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 q |32 q |33 dq^2
+&&&                    |35 fz
+-4294967296.0*vk32     |1 I*dq |2 q |3 q |4 q |5 q |6 q |7 q |8 q |9 q |10 q |11 q |12 q |13 q |14 q |15 q |16 q |17 q |18 q |19 q |20 q |21 q |22 q |23 q |24 q |25 q |26 q |27 q |28 q |29 q |30 q |31 q |32 q |33 I*dq
+&&&                    |35 fz
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_rinit
+modes | r
+1.0                  |1 KE
+1.0                  |1 VNr
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nd
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |1 1
+1.0                    |1 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc1
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |2 1
+1.0                    |2 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc2
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |3 1
+1.0                    |3 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc3
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |4 1
+1.0                    |4 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc4
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |5 1
+1.0                    |5 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc5
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |6 1
+1.0                    |6 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc6
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |7 1
+1.0                    |7 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc7
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |8 1
+1.0                    |8 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc8
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |9 1
+1.0                    |9 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc9
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |10 1
+1.0                    |10 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc10
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |11 1
+1.0                    |11 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc11
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |12 1
+1.0                    |12 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc12
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |13 1
+1.0                    |13 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc13
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |14 1
+1.0                    |14 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc14
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |15 1
+1.0                    |15 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc15
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |16 1
+1.0                    |16 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc16
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |17 1
+1.0                    |17 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc17
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |18 1
+1.0                    |18 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc18
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |19 1
+1.0                    |19 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc19
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |20 1
+1.0                    |20 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc20
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |21 1
+1.0                    |21 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc21
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |22 1
+1.0                    |22 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc22
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |23 1
+1.0                    |23 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc23
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |24 1
+1.0                    |24 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc24
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |25 1
+1.0                    |25 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc25
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |26 1
+1.0                    |26 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc26
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |27 1
+1.0                    |27 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc27
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |28 1
+1.0                    |28 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc28
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |29 1
+1.0                    |29 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc29
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |30 1
+1.0                    |30 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc30
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |31 1
+1.0                    |31 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc31
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |32 1
+1.0                    |32 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_nc32
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+0.5                    |33 1
+1.0                    |33 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_rmean
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+1.0                    |34 q
+end-HAMILTONIAN-SECTION
+HAMILTONIAN-SECTION_zmean
+modes | d | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9
+modes | c10 | c11 | c12 | c13 | c14 | c15 | c16 | c17 | c18 | c19
+modes | c20 | c21 | c22 | c23 | c24 | c25 | c26 | c27 | c28 | c29
+modes | c30 | c31 | c32 | r | z
+1.0                    |35 q
+end-HAMILTONIAN-SECTION
+END-OPERATOR
+
+#******************************************************************************#
