@@ -43,8 +43,9 @@ TREE_INPUT = ROOT / "results" / "benchmark3_no_au_scattering" / "heidelberg" / "
 BASE_INPUTS = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg" / "run_008"
 OUT = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg_heff"
 
-DT_SWEEP = [3.0, 2.0, 1.5, 1.0]           # a.u.  -> r = 689, 1034, 1378, 2067 over 50 fs
-INCLUDE_METAL_METAL = False                # drop the 496-term [H_j,H_k] family (see e1_terms)
+DT_SWEEP = [3.0, 2.0, 1.5, 1.0, 0.5, 0.25]   # a.u.  -> run_001..006  (r = 689 .. 8268 over 50 fs)
+CHECK_FULL_DT = 1.0                        # extra dir 'check_full': Δt=1 with the FULL E1 ([H_j,H_k] back)
+INCLUDE_METAL_METAL = False                # default for the sweep: drop the 496-term [H_j,H_k] family
 RECON_TOL = 1.0e-9
 
 EV_TO_HARTREE = 1.0 / 27.211386245988
@@ -480,16 +481,17 @@ _R_LABEL = {"1": None, "VAr": "VAr", "VNr": "VNr", "dVr": None}          # dVr n
 _Z_LABEL = {"1": None, "fz": "fz", "fz2": "fz2", "fzVAz": "fzVAz", "fzVNz": "fzVNz"}
 
 
-def emit_e1_op_lines(dt: float, vk, ec, n_metal: int) -> list[str]:
+def emit_e1_op_lines(dt: float, vk, ec, n_metal: int, metal_metal: bool | None = None) -> list[str]:
     """diagonal-only  dt * E1  as .op HAMILTONIAN-SECTION lines.
 
     Formats the SAME E1Term list the reduced verifier checks against PennyLane
     (single source of truth; coefficients are baked real numbers).
     """
+    mm = INCLUDE_METAL_METAL if metal_metal is None else metal_metal
     r_mode, z_mode = n_metal + 2, n_metal + 3
-    lines = ["", f"### ---- dt*E1  (leading BCH error operator, dt = {dt} a.u.) ----"]
+    lines = ["", f"### ---- dt*E1  (dt = {dt} a.u., metal_metal={mm}) ----"]
     for t in e1_terms(n_metal, ec, vk, dt, include_kinetic=False,
-                      include_metal_metal=INCLUDE_METAL_METAL):
+                      include_metal_metal=mm):
         c = complex(t.coeff)
         if abs(c.imag) > 1e-10 * max(abs(c.real), 1.0):
             raise RuntimeError(f"unexpected complex E1 coeff {c}")
@@ -529,14 +531,14 @@ def _base_op_text() -> str:
     return (RUN001 / "benchmark.op").read_text(encoding="utf-8").replace("\r\n", "\n")
 
 
-def _op_with_e1(dt: float, vk, ec, n_metal: int) -> str:
+def _op_with_e1(dt: float, vk, ec, n_metal: int, metal_metal: bool | None = None) -> str:
     text = _base_op_text()
     text = text.replace(
         "\nend-LABELS-SECTION",
         "\n" + "\n".join(NEW_LABELS) + "\nend-LABELS-SECTION",
         1,
     )
-    e1 = "\n".join(emit_e1_op_lines(dt, vk, ec, n_metal)) + "\n"
+    e1 = "\n".join(emit_e1_op_lines(dt, vk, ec, n_metal, metal_metal)) + "\n"
     text = text.replace("\nend-HAMILTONIAN-SECTION", "\n" + e1 + "end-HAMILTONIAN-SECTION", 1)
     return text
 
@@ -577,6 +579,19 @@ def write_full_inputs() -> None:
         n_e1 = sum(1 for ln in emit_e1_op_lines(dt, vk, ec, n_metal)
                    if ln and not ln.startswith("#") and not ln.startswith("###"))
         print(f"{run}/  dt={dt:5.2f} a.u.  r={r_steps:4d}   E1 .op lines={n_e1}")
+
+    # check_full : full E1 ([H_j,H_k] back in) at CHECK_FULL_DT  -- convergence check
+    d = OUT / "check_full"
+    d.mkdir(exist_ok=True)
+    (d / "benchmark.op").write_text(
+        _op_with_e1(CHECK_FULL_DT, vk, ec, n_metal, metal_metal=True), encoding="utf-8")
+    (d / "benchmark.inp").write_text(_patched_inp("check_full"), encoding="utf-8")
+    for f in BASE_DATS:
+        (d / f).write_bytes((RUN001 / f).read_bytes())
+    write_product_dat(d)
+    n_e1 = sum(1 for ln in emit_e1_op_lines(CHECK_FULL_DT, vk, ec, n_metal, metal_metal=True)
+               if ln and not ln.startswith("#") and not ln.startswith("###"))
+    print(f"check_full/  dt={CHECK_FULL_DT:.2f} a.u.  FULL E1 .op lines={n_e1}")
 
     # runner
     sh = OUT / "run_no_au_heff_heidelberg.sh"

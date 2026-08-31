@@ -261,7 +261,7 @@ ec32                   |33 q
 &&&                    |35 fz
 
 
-### ---- dt*E1  (leading BCH error operator, dt = 1.0 a.u.) ----
+### ---- dt*E1  (dt = 1.0 a.u., metal_metal=False) ----
 -1.479379578634d-02    |1 dq^2 |2 I*dq |34 VAr |35 fz
 1.479379578634d-02     |1 I*dq |2 dq^2 |34 VAr |35 fz
 1.479379578634d-02     |1 dq^2 |2 I*dq |34 VNr |35 fz
