@@ -39,12 +39,14 @@ RUN009_OBS = ROOT / "results" / "benchmark3_no_au_scattering" / "heidelberg" / "
 FIGDIR = ROOT / "figures" / "benchmark3_no_au_scattering"
 
 T_TOTAL = 2067.06866675911
-DT_SWEEP = {"run_001": 3.0, "run_002": 2.0, "run_003": 1.5,
-            "run_004": 1.0, "run_005": 0.5, "run_006": 0.25}
+DT_SWEEP = {"run_001": 3.0, "run_002": 2.0, "run_003": 1.5, "run_004": 1.0,
+            "run_005": 0.5, "run_006": 0.25, "run_007": 1.25, "run_008": 1.75}
 CHECK_FULL_DT = 1.0
 CALIB = 1.27
 EPS_LIST = [1e-2, 3e-3, 1e-3]
 NCOL = 37                                   # time,norm,nd,nc1..nc32,rmean,zmean
+FLOOR_MULT = 5.0                            # keep a point only if  delta >= FLOOR_MULT * floor
+SAT_ABS = 5.0e-3                            # ...and  delta <= SAT_ABS  (above this P_mol is saturating)
 
 
 def load_pmol(path: Path):
@@ -119,26 +121,39 @@ def main() -> None:
               f"{r['late_mean']:>12.3e}{r['max_t']:>12.3e}{r['t_last']:>9.0f}")
 
     est = {"t_total_au": T_TOTAL, "window_fs": 50.0, "calib": CALIB,
-           "noise_floor": floor, "metrics": {}}
+           "noise_floor": floor, "floor_mult": FLOOR_MULT, "sat_abs": SAT_ABS,
+           "metrics": {}}
     for metric in ("final", "late_mean", "max_t"):
         y = np.array([r[metric] for r in rows])
+        fl = floor[metric] if floor else 0.0
+        keep = (y >= FLOOR_MULT * fl) & (y <= SAT_ABS)
         pair = np.diff(np.log(y)) / np.diff(np.log(dt))
-        alpha, coef = loglog_fit(dt, y)
-        print(f"\n--- metric = {metric} ---")
-        print(f"  per-pair slopes (small->large dt): "
-              + "  ".join(f"{p:.2f}" for p in pair))
-        print(f"  global log-log fit:  alpha = {alpha:.2f}")
-        m = {"alpha": alpha, "pair_slopes": [float(p) for p in pair], "r_star": {}}
-        # extrapolate with the FITTED alpha, anchored on the smallest dt
-        dt0, d0 = dt[0], y[0]
-        for eps in EPS_LIST:
-            dt_star = dt0 * (eps / d0) ** (1.0 / alpha)
-            r = int(np.ceil(T_TOTAL / dt_star))
-            m["r_star"][f"{eps:.0e}"] = {
-                "r_50fs": r, "band_50fs": [int(np.ceil(r / CALIB)), r],
-                "r_350fs_lb": 7 * r}
-            print(f"    eps={eps:.0e}:  dt*={dt_star:.3f}  r*(50fs)={r}"
-                  f"  band[{int(np.ceil(r/CALIB))},{r}]  (>~{7*r} for 350fs)")
+        print(f"\n--- metric = {metric}   (floor={fl:.1e}, window: "
+              f"{FLOOR_MULT:.0f}x floor .. {SAT_ABS:.0e}) ---")
+        for i, r in enumerate(rows):
+            tag = "used" if keep[i] else ("<floor" if y[i] < FLOOR_MULT * fl else "sat")
+            sl = f"  slope_to_next={pair[i]:+.2f}" if i < len(pair) else ""
+            print(f"    dt={r['dt_au']:>4}  {metric}={y[i]:.3e}  [{tag}]{sl}")
+
+        m = {"floor": fl, "window_runs": [rows[i]["run"] for i in np.where(keep)[0]]}
+        if keep.sum() < 2:
+            m["status"] = "INSUFFICIENT POINTS in the clean window"
+            print(f"  -> only {keep.sum()} usable point(s); cannot fit.")
+        else:
+            xw, yw = dt[keep], y[keep]
+            alpha, coef = loglog_fit(xw, yw)
+            m["alpha"] = alpha
+            m["r_star"] = {}
+            dt0, d0 = xw[0], yw[0]                    # anchor on smallest kept dt
+            print(f"  fit over {list(xw)}:  alpha = {alpha:.2f}")
+            for eps in EPS_LIST:
+                dt_star = dt0 * (eps / d0) ** (1.0 / alpha)
+                r = int(np.ceil(T_TOTAL / dt_star))
+                m["r_star"][f"{eps:.0e}"] = {
+                    "r_50fs": r, "band_50fs": [int(np.ceil(r / CALIB)), r],
+                    "r_350fs_lb": 7 * r}
+                print(f"    eps={eps:.0e}:  dt*={dt_star:.3f}  r*(50fs)={r}"
+                      f"  band[{int(np.ceil(r/CALIB))},{r}]  (>~{7*r} @350fs)")
         est["metrics"][metric] = m
 
     if cf_line:

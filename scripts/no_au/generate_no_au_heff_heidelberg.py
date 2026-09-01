@@ -43,7 +43,7 @@ TREE_INPUT = ROOT / "results" / "benchmark3_no_au_scattering" / "heidelberg" / "
 BASE_INPUTS = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg" / "run_008"
 OUT = ROOT / "backend_inputs" / "benchmark3_no_au_scattering" / "heidelberg_heff"
 
-DT_SWEEP = [3.0, 2.0, 1.5, 1.0, 0.5, 0.25]   # a.u.  -> run_001..006  (r = 689 .. 8268 over 50 fs)
+DT_SWEEP = [3.0, 2.0, 1.5, 1.0, 0.5, 0.25, 1.25, 1.75]   # run_001..008 (007,008 = window refinement)
 CHECK_FULL_DT = 1.0                        # extra dir 'check_full': Δt=1 with the FULL E1 ([H_j,H_k] back)
 INCLUDE_METAL_METAL = False                # default for the sweep: drop the 496-term [H_j,H_k] family
 RECON_TOL = 1.0e-9
